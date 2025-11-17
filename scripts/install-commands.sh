@@ -8,7 +8,7 @@ set -e  # Exit on any error
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 INSTALL_DIR="$HOME/.local/bin"
-JAR_NAME="mongodb-strategy-balancer.jar"
+JAR_NAME="mongodb-custom-balancer.jar"
 
 # Colors for output
 RED='\033[0;31m'
@@ -51,15 +51,12 @@ fi
 
 print_color $GREEN "✓ Java version found: $JAVA_VERSION"
 
-# Build the project if JAR doesn't exist
+# Check if JAR exists
 if [ ! -f "$PROJECT_DIR/bin/$JAR_NAME" ]; then
-    print_color $YELLOW "JAR file not found. Building project..."
-    cd "$PROJECT_DIR"
-    mvn clean package -DskipTests
-    if [ ! -f "$PROJECT_DIR/bin/$JAR_NAME" ]; then
-        print_color $RED "Error: Build failed or JAR file not found at $PROJECT_DIR/bin/$JAR_NAME"
-        exit 1
-    fi
+    print_color $RED "Error: JAR file not found at $PROJECT_DIR/bin/$JAR_NAME"
+    print_color $YELLOW "Please build the project first:"
+    print_color $YELLOW "  mvn clean package"
+    exit 1
 fi
 
 # Check if this is an update
