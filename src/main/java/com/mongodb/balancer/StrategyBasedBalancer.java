@@ -89,6 +89,9 @@ public class StrategyBasedBalancer implements Callable<Integer> {
     @Option(names = {"--dryRun"}, description = "Dry run mode - log what would be done without actually moving chunks")
     private Boolean dryRun;
 
+    @Option(names = {"-v", "--verbose"}, description = "Enable verbose debug logging")
+    private Boolean verbose;
+
     // Zone and validation
     @Option(names = {"--requireNoZones"}, description = "Require that no zones are configured (fail-safe)")
     private Boolean requireNoZones;
@@ -268,6 +271,9 @@ public class StrategyBasedBalancer implements Callable<Integer> {
             if (dryRun != null) {
                 config.setDryRun(dryRun);
             }
+            if (verbose != null) {
+                config.setVerbose(verbose);
+            }
             if (continuousMode != null) {
                 config.setContinuousMode(continuousMode);
             }
@@ -297,6 +303,12 @@ public class StrategyBasedBalancer implements Callable<Integer> {
             if (config.getSourceClusterUri() == null) {
                 logger.error("sourceClusterUri is required. Provide it via command-line (-s) or properties file.");
                 return false;
+            }
+
+            // Set logging level if verbose mode is enabled
+            if (config.isVerbose()) {
+                setLogLevel("DEBUG");
+                logger.info("Verbose logging enabled (DEBUG level)");
             }
 
             logConfiguration();
@@ -697,8 +709,9 @@ public class StrategyBasedBalancer implements Callable<Integer> {
                 return null;
             }
 
-            // Check rate limits
-            if (rateLimiter.getChunksMovedThisHour() >= rateLimiter.getMaxChunksPerHour()) {
+            // Check rate limits (0 means unlimited)
+            if (rateLimiter.getMaxChunksPerHour() > 0 &&
+                rateLimiter.getChunksMovedThisHour() >= rateLimiter.getMaxChunksPerHour()) {
                 logger.debug("Worker {}: Rate limit reached", workerId);
                 return null;
             }
@@ -718,6 +731,7 @@ public class StrategyBasedBalancer implements Callable<Integer> {
             // Find best source shard from available shards
             String sourceShard = getBestShard(cachedScores, availableShards, true);
             if (sourceShard == null) {
+                logger.debug("Worker {}: No source shard found", workerId);
                 return null;
             }
 
@@ -726,8 +740,11 @@ public class StrategyBasedBalancer implements Callable<Integer> {
             destsWithoutSource.remove(sourceShard);
             String destShard = getBestShard(cachedScores, destsWithoutSource, false);
             if (destShard == null) {
+                logger.debug("Worker {}: No dest shard found", workerId);
                 return null;
             }
+
+            logger.debug("Worker {}: Checking threshold for {} -> {}", workerId, sourceShard, destShard);
 
             // Check threshold
             if (!meetsThreshold(sourceShard, destShard, cachedMetrics)) {
@@ -1446,6 +1463,15 @@ public class StrategyBasedBalancer implements Callable<Integer> {
         int exp = (int) (Math.log(bytes) / Math.log(1024));
         String pre = "KMGTPE".charAt(exp - 1) + "";
         return String.format("%.2f %sB", bytes / Math.pow(1024, exp), pre);
+    }
+
+    /**
+     * Set the logging level dynamically.
+     */
+    private void setLogLevel(String level) {
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger)
+            org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        root.setLevel(ch.qos.logback.classic.Level.toLevel(level));
     }
 
     /**

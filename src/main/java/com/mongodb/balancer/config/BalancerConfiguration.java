@@ -36,6 +36,7 @@ public class BalancerConfiguration extends BaseConfiguration {
     private boolean waitForDelete;
     private boolean disableBuiltInBalancer;
     private boolean dryRun;
+    private boolean verbose;
 
     // Balancing loop
     private boolean continuousMode;           // Keep running in a loop
@@ -68,6 +69,7 @@ public class BalancerConfiguration extends BaseConfiguration {
         this.waitForDelete = true;
         this.disableBuiltInBalancer = true;
         this.dryRun = false;
+        this.verbose = false;
         this.continuousMode = true;
         this.requireNoZones = true;  // Fail-safe default
         this.respectZones = true;    // Future use
@@ -168,6 +170,14 @@ public class BalancerConfiguration extends BaseConfiguration {
 
     public void setDryRun(boolean dryRun) {
         this.dryRun = dryRun;
+    }
+
+    public boolean isVerbose() {
+        return verbose;
+    }
+
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
     }
 
     public boolean isContinuousMode() {
@@ -309,6 +319,7 @@ public class BalancerConfiguration extends BaseConfiguration {
         this.waitForDelete = config.getBoolean("waitForDelete", true);
         this.disableBuiltInBalancer = config.getBoolean("disableBuiltInBalancer", true);
         this.dryRun = config.getBoolean("dryRun", false);
+        this.verbose = config.getBoolean("verbose", false);
         this.continuousMode = config.getBoolean("continuousMode", true);
         this.requireNoZones = config.getBoolean("requireNoZones", true);
         this.respectZones = config.getBoolean("respectZones", true);
