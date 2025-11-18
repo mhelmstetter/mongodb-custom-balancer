@@ -10,6 +10,3 @@
 # IntelliJ
 .idea/
 *.iml
-
-# Maven
-/bin/
