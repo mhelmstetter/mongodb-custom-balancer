@@ -144,14 +144,21 @@ public class ChunkRegistry {
             long matchingChunks = configDb.getCollection("chunks").countDocuments(query);
             logger.info("Registry: Chunks matching query (non-jumbo, non-noBalance): {}", matchingChunks);
 
+            int processedCount = 0;
+            int skippedCount = 0;
+            int errorCount = 0;
+
             for (Document chunkDoc : configDb.getCollection("chunks").find(query)) {
                 try {
+                    processedCount++;
+
                     // Parse chunk document
                     String shardId = chunkDoc.getString("shard");
                     String namespace = chunkDoc.getString("ns");
 
                     // Skip config collections
                     if (namespace == null || namespace.startsWith("config.")) {
+                        skippedCount++;
                         continue;
                     }
 
@@ -185,11 +192,17 @@ public class ChunkRegistry {
                     totalChunks++;
 
                 } catch (Exception e) {
-                    logger.error("Failed to process chunk document: {}", e.getMessage(), e);
+                    errorCount++;
+                    if (errorCount <= 5) {
+                        // Only log first 5 errors to avoid spam
+                        logger.error("Failed to process chunk document (error #{}/{}): {}",
+                            errorCount, processedCount, e.getMessage(), e);
+                    }
                 }
             }
 
-            logger.info("Registry: Successfully loaded {} chunks from config.chunks", totalChunks);
+            logger.info("Registry: Processed {} chunks - {} loaded, {} skipped (config.*), {} errors",
+                processedCount, totalChunks, skippedCount, errorCount);
 
         } catch (Exception e) {
             logger.error("Failed to load chunks from config.chunks", e);
