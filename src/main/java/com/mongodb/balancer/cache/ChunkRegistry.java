@@ -1,10 +1,7 @@
 package com.mongodb.balancer.cache;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoDatabase;
 import com.mongodb.model.Megachunk;
 import com.mongodb.shardsync.ShardClient;
-import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,60 +122,24 @@ public class ChunkRegistry {
         registry.clear();
         shardToChunks.clear();
 
-        // Load all chunks directly from config.chunks without using ShardClient cache
-        MongoClient mongosClient = shardClient.getMongoClient();
-        MongoDatabase configDb = mongosClient.getDatabase("config");
+        // Get all shards
+        Set<String> shardIds = shardClient.getShardsMap().keySet();
 
         int totalChunks = 0;
+        for (String shardId : shardIds) {
+            try {
+                // Use existing ChunkUtils which handles both ns and uuid fields correctly
+                List<Megachunk> chunks = com.mongodb.util.ChunkUtils.loadChunksForShard(
+                    shardClient,
+                    shardId,
+                    true,  // excludeJumbo
+                    true,  // excludeNoBalance
+                    null   // no namespace filter
+                );
 
-        try {
-            // First, count total chunks to verify collection is accessible
-            long totalChunkCount = configDb.getCollection("chunks").countDocuments();
-            logger.info("Registry: Total chunks in config.chunks: {}", totalChunkCount);
-
-            // Query all chunks where jumbo != true and noBalance != true
-            Document query = new Document();
-            query.put("jumbo", new Document("$ne", true));
-            query.put("noBalance", new Document("$ne", true));
-
-            long matchingChunks = configDb.getCollection("chunks").countDocuments(query);
-            logger.info("Registry: Chunks matching query (non-jumbo, non-noBalance): {}", matchingChunks);
-
-            int processedCount = 0;
-            int skippedCount = 0;
-            int errorCount = 0;
-
-            for (Document chunkDoc : configDb.getCollection("chunks").find(query)) {
-                try {
-                    processedCount++;
-
-                    // Parse chunk document
-                    String shardId = chunkDoc.getString("shard");
-                    String namespace = chunkDoc.getString("ns");
-
-                    // Skip config collections
-                    if (namespace == null || namespace.startsWith("config.")) {
-                        skippedCount++;
-                        continue;
-                    }
-
-                    // Create Megachunk from document
-                    Megachunk chunk = new Megachunk();
-                    chunk.setNs(namespace);
-                    chunk.setShard(shardId);
-
-                    // Set chunk bounds
-                    Object minObj = chunkDoc.get("min");
-                    if (minObj instanceof Document) {
-                        chunk.setMin(((Document) minObj).toBsonDocument());
-                    }
-
-                    Object maxObj = chunkDoc.get("max");
-                    if (maxObj instanceof Document) {
-                        chunk.addMax(((Document) maxObj).toBsonDocument());
-                    }
-
-                    // Register the chunk
+                // Register each chunk
+                for (Megachunk chunk : chunks) {
+                    String namespace = chunk.getNs();
                     String chunkKey = makeChunkKey(namespace, chunk);
 
                     // Add to namespace map
@@ -188,24 +149,14 @@ public class ChunkRegistry {
                     // Add to reverse index
                     shardToChunks.computeIfAbsent(shardId, k -> ConcurrentHashMap.newKeySet())
                         .add(chunkKey);
-
-                    totalChunks++;
-
-                } catch (Exception e) {
-                    errorCount++;
-                    if (errorCount <= 5) {
-                        // Only log first 5 errors to avoid spam
-                        logger.error("Failed to process chunk document (error #{}/{}): {}",
-                            errorCount, processedCount, e.getMessage(), e);
-                    }
                 }
+
+                totalChunks += chunks.size();
+                logger.debug("Registry: Loaded {} chunks for shard {}", chunks.size(), shardId);
+
+            } catch (Exception e) {
+                logger.error("Failed to load chunks for shard {}", shardId, e);
             }
-
-            logger.info("Registry: Processed {} chunks - {} loaded, {} skipped (config.*), {} errors",
-                processedCount, totalChunks, skippedCount, errorCount);
-
-        } catch (Exception e) {
-            logger.error("Failed to load chunks from config.chunks", e);
         }
 
         lastFullRefreshTime = System.currentTimeMillis();
