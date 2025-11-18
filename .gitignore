@@ -1,3 +1,15 @@
 /target/
 /BALANCER_INTERNALS.md
 /balancer.properties
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# IntelliJ
+.idea/
+*.iml
+
+# Maven
+/bin/
