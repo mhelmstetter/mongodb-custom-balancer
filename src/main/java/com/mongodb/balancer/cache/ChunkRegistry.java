@@ -126,8 +126,8 @@ public class ChunkRegistry {
         Set<String> shardIds = shardClient.getShardsMap().keySet();
 
         try {
-            // Load ALL chunks in a single query (no shard filter)
-            java.util.Map<String, org.bson.RawBsonDocument> allChunks = shardClient.getChunksCache(null);
+            // Load ALL chunks in a single query (empty query matches all documents)
+            java.util.Map<String, org.bson.RawBsonDocument> allChunks = shardClient.getChunksCache(new org.bson.BsonDocument());
 
             logger.info("Registry: Loaded {} total chunks from MongoDB", allChunks.size());
 
