@@ -67,7 +67,7 @@ public class DataSizeBalancingStrategy implements BalancingStrategy {
                 double normalizedScore = (double) (dataSize - minData) / range;
                 scores.put(metrics.getShardId(), normalizedScore);
 
-                logger.debug("Shard {} - dataSize: {:.2f} GB, score: {:.3f}",
+                logger.debug("Shard {} - dataSize: {} GB, score: {}",
                            metrics.getShardId(), metrics.getDataSizeGB(), normalizedScore);
             }
         }

@@ -67,7 +67,7 @@ public class ChunkCountBalancingStrategy implements BalancingStrategy {
                 double normalizedScore = (double) (chunkCount - minChunks) / range;
                 scores.put(metrics.getShardId(), normalizedScore);
 
-                logger.debug("Shard {} - chunks: {}, score: {:.3f}",
+                logger.debug("Shard {} - chunks: {}, score: {}",
                            metrics.getShardId(), chunkCount, normalizedScore);
             }
         }

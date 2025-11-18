@@ -113,7 +113,7 @@ public class ChunkRegistry {
     }
 
     /**
-     * Perform a full refresh from MongoDB - load all chunks for all shards.
+     * Perform a full refresh from MongoDB - load all chunks in a single query.
      */
     private synchronized void fullRefresh() {
         long startTime = System.currentTimeMillis();
@@ -122,89 +122,90 @@ public class ChunkRegistry {
         registry.clear();
         shardToChunks.clear();
 
-        // Get all shards
+        // Get all shards to validate chunk assignments
         Set<String> shardIds = shardClient.getShardsMap().keySet();
 
-        int totalChunks = 0;
-        for (String shardId : shardIds) {
-            try {
-                // Create a fresh cache for this shard to avoid contamination
-                org.bson.BsonDocument query = new org.bson.BsonDocument("shard", new org.bson.BsonString(shardId));
-                java.util.Map<String, org.bson.RawBsonDocument> freshCache = shardClient.getChunksCache(query);
+        try {
+            // Load ALL chunks in a single query (no shard filter)
+            java.util.Map<String, org.bson.RawBsonDocument> allChunks = shardClient.getChunksCache(null);
 
-                // Filter and load chunks using ChunkUtils logic
-                List<Megachunk> chunks = new ArrayList<>();
-                int jumboSkipped = 0;
-                int noBalanceSkipped = 0;
-                int configSessionsSkipped = 0;
+            logger.info("Registry: Loaded {} total chunks from MongoDB", allChunks.size());
 
-                for (org.bson.RawBsonDocument chunkDoc : freshCache.values()) {
-                    // Check if chunk is jumbo
-                    if (com.mongodb.util.ChunkUtils.isChunkJumbo(chunkDoc)) {
-                        jumboSkipped++;
-                        continue;
-                    }
+            // Filter and distribute chunks by shard
+            int totalChunks = 0;
+            int jumboSkipped = 0;
+            int noBalanceSkipped = 0;
+            int configSessionsSkipped = 0;
+            int unknownShardSkipped = 0;
 
-                    // Extract namespace
-                    String ns = com.mongodb.util.ChunkUtils.extractNamespace(chunkDoc, shardClient);
-                    if (ns == null) {
-                        continue;
-                    }
-
-                    // Always exclude config.system.sessions
-                    if ("config.system.sessions".equals(ns)) {
-                        configSessionsSkipped++;
-                        continue;
-                    }
-
-                    // Check if collection allows balancing
-                    if (!com.mongodb.util.ChunkUtils.isCollectionBalanceable(shardClient, ns)) {
-                        noBalanceSkipped++;
-                        continue;
-                    }
-
-                    // Create Megachunk from the raw document
-                    Megachunk chunk = new Megachunk();
-                    chunk.setNs(ns);
-                    chunk.setShard(chunkDoc.getString("shard").getValue());
-                    chunk.setMin(chunkDoc.getDocument("min"));
-
-                    org.bson.BsonValue max = chunkDoc.get("max");
-                    if (max instanceof org.bson.BsonDocument) {
-                        chunk.setMax((org.bson.BsonDocument) max);
-                    }
-
-                    chunks.add(chunk);
+            for (org.bson.RawBsonDocument chunkDoc : allChunks.values()) {
+                // Check if chunk is jumbo
+                if (com.mongodb.util.ChunkUtils.isChunkJumbo(chunkDoc)) {
+                    jumboSkipped++;
+                    continue;
                 }
 
-                // Register each chunk
-                for (Megachunk chunk : chunks) {
-                    String namespace = chunk.getNs();
-                    String chunkKey = makeChunkKey(namespace, chunk);
-
-                    // Add to namespace map
-                    registry.computeIfAbsent(namespace, k -> new ConcurrentHashMap<>())
-                        .put(chunkKey, new ChunkInfo(chunk, shardId));
-
-                    // Add to reverse index
-                    shardToChunks.computeIfAbsent(shardId, k -> ConcurrentHashMap.newKeySet())
-                        .add(chunkKey);
+                // Extract namespace
+                String ns = com.mongodb.util.ChunkUtils.extractNamespace(chunkDoc, shardClient);
+                if (ns == null) {
+                    continue;
                 }
 
-                totalChunks += chunks.size();
-                logger.debug("Registry: Loaded {} chunks for shard {} ({} jumbo, {} noBalance, {} config.system.sessions skipped)",
-                    chunks.size(), shardId, jumboSkipped, noBalanceSkipped, configSessionsSkipped);
+                // Always exclude config.system.sessions
+                if ("config.system.sessions".equals(ns)) {
+                    configSessionsSkipped++;
+                    continue;
+                }
 
-            } catch (Exception e) {
-                logger.error("Failed to load chunks for shard {}", shardId, e);
+                // Check if collection allows balancing
+                if (!com.mongodb.util.ChunkUtils.isCollectionBalanceable(shardClient, ns)) {
+                    noBalanceSkipped++;
+                    continue;
+                }
+
+                // Get shard assignment
+                String shardId = chunkDoc.getString("shard").getValue();
+
+                // Verify shard exists in cluster
+                if (!shardIds.contains(shardId)) {
+                    unknownShardSkipped++;
+                    continue;
+                }
+
+                // Create Megachunk from the raw document
+                Megachunk chunk = new Megachunk();
+                chunk.setNs(ns);
+                chunk.setShard(shardId);
+                chunk.setMin(chunkDoc.getDocument("min"));
+
+                org.bson.BsonValue max = chunkDoc.get("max");
+                if (max instanceof org.bson.BsonDocument) {
+                    chunk.setMax((org.bson.BsonDocument) max);
+                }
+
+                // Register the chunk
+                String chunkKey = makeChunkKey(ns, chunk);
+
+                // Add to namespace map
+                registry.computeIfAbsent(ns, k -> new ConcurrentHashMap<>())
+                    .put(chunkKey, new ChunkInfo(chunk, shardId));
+
+                // Add to reverse index
+                shardToChunks.computeIfAbsent(shardId, k -> ConcurrentHashMap.newKeySet())
+                    .add(chunkKey);
+
+                totalChunks++;
             }
+
+            lastFullRefreshTime = System.currentTimeMillis();
+            long duration = lastFullRefreshTime - startTime;
+
+            logger.info("Registry: Full refresh completed - {} chunks across {} shards in {}ms ({} jumbo, {} noBalance, {} config.system.sessions, {} unknown shard skipped)",
+                totalChunks, shardToChunks.size(), duration, jumboSkipped, noBalanceSkipped, configSessionsSkipped, unknownShardSkipped);
+
+        } catch (Exception e) {
+            logger.error("Failed to load chunks", e);
         }
-
-        lastFullRefreshTime = System.currentTimeMillis();
-        long duration = lastFullRefreshTime - startTime;
-
-        logger.info("Registry: Full refresh completed - {} chunks across {} shards in {}ms",
-            totalChunks, shardToChunks.size(), duration);
     }
 
     /**
