@@ -1,7 +1,10 @@
 package com.mongodb.balancer.cache;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.model.Megachunk;
 import com.mongodb.shardsync.ShardClient;
+import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,24 +125,46 @@ public class ChunkRegistry {
         registry.clear();
         shardToChunks.clear();
 
-        // Get all shards
-        Set<String> shardIds = shardClient.getShardsMap().keySet();
+        // Load all chunks directly from config.chunks without using ShardClient cache
+        MongoClient mongosClient = shardClient.getMongoClient();
+        MongoDatabase configDb = mongosClient.getDatabase("config");
 
         int totalChunks = 0;
-        for (String shardId : shardIds) {
-            try {
-                // Load chunks for this shard
-                List<Megachunk> chunks = com.mongodb.util.ChunkUtils.loadChunksForShard(
-                    shardClient,
-                    shardId,
-                    true,  // excludeJumbo
-                    true,  // excludeNoBalance
-                    null   // no namespace filter
-                );
 
-                // Register each chunk
-                for (Megachunk chunk : chunks) {
-                    String namespace = chunk.getNs();
+        try {
+            // Query all chunks where jumbo != true and noBalance != true
+            Document query = new Document();
+            query.put("jumbo", new Document("$ne", true));
+            query.put("noBalance", new Document("$ne", true));
+
+            for (Document chunkDoc : configDb.getCollection("chunks").find(query)) {
+                try {
+                    // Parse chunk document
+                    String shardId = chunkDoc.getString("shard");
+                    String namespace = chunkDoc.getString("ns");
+
+                    // Skip config collections
+                    if (namespace == null || namespace.startsWith("config.")) {
+                        continue;
+                    }
+
+                    // Create Megachunk from document
+                    Megachunk chunk = new Megachunk();
+                    chunk.setNs(namespace);
+                    chunk.setShard(shardId);
+
+                    // Set chunk bounds
+                    Object minObj = chunkDoc.get("min");
+                    if (minObj instanceof Document) {
+                        chunk.setMin(((Document) minObj).toBsonDocument());
+                    }
+
+                    Object maxObj = chunkDoc.get("max");
+                    if (maxObj instanceof Document) {
+                        chunk.addMax(((Document) maxObj).toBsonDocument());
+                    }
+
+                    // Register the chunk
                     String chunkKey = makeChunkKey(namespace, chunk);
 
                     // Add to namespace map
@@ -149,21 +174,25 @@ public class ChunkRegistry {
                     // Add to reverse index
                     shardToChunks.computeIfAbsent(shardId, k -> ConcurrentHashMap.newKeySet())
                         .add(chunkKey);
+
+                    totalChunks++;
+
+                } catch (Exception e) {
+                    logger.warn("Failed to process chunk document: {}", e.getMessage());
                 }
-
-                totalChunks += chunks.size();
-                logger.debug("Registry: Loaded {} chunks for shard {}", chunks.size(), shardId);
-
-            } catch (Exception e) {
-                logger.error("Failed to load chunks for shard {}", shardId, e);
             }
+
+            logger.debug("Registry: Loaded {} total chunks across all shards", totalChunks);
+
+        } catch (Exception e) {
+            logger.error("Failed to load chunks from config.chunks", e);
         }
 
         lastFullRefreshTime = System.currentTimeMillis();
         long duration = lastFullRefreshTime - startTime;
 
         logger.info("Registry: Full refresh completed - {} chunks across {} shards in {}ms",
-            totalChunks, shardIds.size(), duration);
+            totalChunks, shardToChunks.size(), duration);
     }
 
     /**
