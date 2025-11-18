@@ -126,6 +126,7 @@ public class StrategyBasedBalancer implements Callable<Integer> {
     private List<BalancingStrategy> strategies;
     private ExecutorService migrationExecutor;
     private ExecutorService statusReporter;
+    private ExecutorService metricsRefresher;
     private ChunkRegistry chunkRegistry;
 
     // Namespace-focused balancing (optional)
@@ -524,7 +525,21 @@ public class StrategyBasedBalancer implements Callable<Integer> {
         running = true;
 
         // Initial metrics refresh
-        refreshMetricsIfNeeded();
+        refreshMetrics();
+
+        // Start background metrics refresher thread
+        long metricsRefreshIntervalMs = config.getMetricsRefreshIntervalMs();
+        long metricsRefreshIntervalSeconds = metricsRefreshIntervalMs / 1000;
+        logger.info("Metrics will be refreshed every {} seconds in background", metricsRefreshIntervalSeconds);
+
+        metricsRefresher = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "metrics-refresher");
+            t.setDaemon(true);
+            return t;
+        });
+        ((java.util.concurrent.ScheduledExecutorService) metricsRefresher)
+            .scheduleAtFixedRate(this::refreshMetrics, metricsRefreshIntervalMs, metricsRefreshIntervalMs,
+                               java.util.concurrent.TimeUnit.MILLISECONDS);
 
         // Submit worker tasks
         int numWorkers = migrationExecutor instanceof java.util.concurrent.ThreadPoolExecutor
@@ -705,9 +720,6 @@ public class StrategyBasedBalancer implements Callable<Integer> {
      */
     private PlannedMigration findAndAcquireMigration(int workerId) {
         synchronized (balancingLock) {
-            // Refresh metrics if needed
-            refreshMetricsIfNeeded();
-
             if (cachedMetrics.isEmpty()) {
                 return null;
             }
@@ -847,12 +859,12 @@ public class StrategyBasedBalancer implements Callable<Integer> {
     }
 
     /**
-     * Refresh metrics if they're stale (older than metricsRefreshIntervalMs).
-     * Should be called within synchronized(balancingLock).
+     * Refresh metrics in background thread.
+     * This runs periodically and updates cached metrics without blocking worker threads.
      */
-    private void refreshMetricsIfNeeded() {
-        long now = System.currentTimeMillis();
-        if (now - lastMetricsRefreshTime > config.getMetricsRefreshIntervalMs()) {
+    private void refreshMetrics() {
+        synchronized (balancingLock) {
+            long now = System.currentTimeMillis();
             logger.debug("Refreshing metrics (last refresh: {} ms ago)",
                         now - lastMetricsRefreshTime);
 
@@ -877,28 +889,28 @@ public class StrategyBasedBalancer implements Callable<Integer> {
 
             logShardMetrics(cachedMetrics);
             logWeightedScores(cachedScores);
-        }
 
-        // Rescan namespaces periodically if namespace-focus is enabled
-        if (config.isUseNamespaceFocus() && namespaceCollector != null) {
-            if (now - lastNamespaceFullScanTime > config.getNamespaceFullScanIntervalMs()) {
-                logger.info("Performing periodic full namespace scan (last scan: {} minutes ago)",
-                    (now - lastNamespaceFullScanTime) / 60000);
+            // Rescan namespaces periodically if namespace-focus is enabled
+            if (config.isUseNamespaceFocus() && namespaceCollector != null) {
+                if (now - lastNamespaceFullScanTime > config.getNamespaceFullScanIntervalMs()) {
+                    logger.info("Performing periodic full namespace scan (last scan: {} minutes ago)",
+                        (now - lastNamespaceFullScanTime) / 60000);
 
-                try {
-                    List<String> imbalancedNamespaces = namespaceCollector.scanAllNamespaces();
-                    lastNamespaceFullScanTime = now;
+                    try {
+                        List<String> imbalancedNamespaces = namespaceCollector.scanAllNamespaces();
+                        lastNamespaceFullScanTime = now;
 
-                    // Limit to maxActiveNamespaces
-                    if (imbalancedNamespaces.size() > config.getMaxActiveNamespaces()) {
-                        imbalancedNamespaces = imbalancedNamespaces.subList(0, config.getMaxActiveNamespaces());
+                        // Limit to maxActiveNamespaces
+                        if (imbalancedNamespaces.size() > config.getMaxActiveNamespaces()) {
+                            imbalancedNamespaces = imbalancedNamespaces.subList(0, config.getMaxActiveNamespaces());
+                        }
+
+                        // Update active namespaces
+                        activeNamespaces = imbalancedNamespaces;
+                        logger.info("Updated active namespaces to {} most imbalanced collections", activeNamespaces.size());
+                    } catch (Exception e) {
+                        logger.error("Failed to rescan namespaces: {}", e.getMessage());
                     }
-
-                    // Update active namespaces
-                    activeNamespaces = imbalancedNamespaces;
-                    logger.info("Updated active namespaces to {} most imbalanced collections", activeNamespaces.size());
-                } catch (Exception e) {
-                    logger.error("Failed to rescan namespaces: {}", e.getMessage());
                 }
             }
         }
@@ -1396,6 +1408,20 @@ public class StrategyBasedBalancer implements Callable<Integer> {
 
         // Stop workers
         running = false;
+
+        // Shutdown metrics refresher
+        if (metricsRefresher != null) {
+            logger.info("Shutting down metrics refresher");
+            metricsRefresher.shutdown();
+            try {
+                if (!metricsRefresher.awaitTermination(10, TimeUnit.SECONDS)) {
+                    metricsRefresher.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                metricsRefresher.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
 
         // Shutdown status reporter
         if (statusReporter != null) {
