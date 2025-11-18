@@ -1,5 +1,6 @@
 package com.mongodb.balancer;
 
+import com.mongodb.balancer.cache.ChunkRegistry;
 import com.mongodb.balancer.config.BalancerConfiguration;
 import com.mongodb.balancer.model.PlannedMigration;
 import com.mongodb.balancer.metrics.DbStatsMetricsCollector;
@@ -125,16 +126,12 @@ public class StrategyBasedBalancer implements Callable<Integer> {
     private List<BalancingStrategy> strategies;
     private ExecutorService migrationExecutor;
     private ExecutorService statusReporter;
+    private ChunkRegistry chunkRegistry;
 
     // Namespace-focused balancing (optional)
     private com.mongodb.balancer.metrics.NamespaceMetricsCollector namespaceCollector;
     private List<String> activeNamespaces = new ArrayList<>();  // Namespaces currently being balanced
     private long lastNamespaceFullScanTime = 0;
-
-    // Chunk caching to avoid excessive loads
-    private final Map<String, List<Megachunk>> shardChunkCache = new HashMap<>();
-    private final Map<String, Long> shardChunkCacheTimestamp = new HashMap<>();
-    private static final long CHUNK_CACHE_TTL_MS = 300000;  // 5 minutes
 
     // Continuous balancing state
     private final Object balancingLock = new Object();
@@ -429,6 +426,11 @@ public class StrategyBasedBalancer implements Callable<Integer> {
             int maxConcurrentMigrations = Math.max(1, shardClient.getShardMongoClients().size() / 2);
             migrationExecutor = Executors.newFixedThreadPool(maxConcurrentMigrations);
 
+            // Initialize chunk registry
+            logger.info("Initializing chunk registry");
+            chunkRegistry = new ChunkRegistry(shardClient, config.getMetricsRefreshIntervalMs());
+            chunkRegistry.initialize();
+
             logger.info("Initialization complete - max concurrent migrations: {}", maxConcurrentMigrations);
             return true;
 
@@ -668,10 +670,11 @@ public class StrategyBasedBalancer implements Callable<Integer> {
                 }
 
                 if (success) {
-                    // Invalidate chunk cache for affected shards only (more efficient than reloading entire namespace)
-                    invalidateCacheForShards(migration.getChunk().getNs(),
-                                            migration.getSourceShard(),
-                                            migration.getDestinationShard());
+                    // Update chunk registry with the migration (no reload needed)
+                    chunkRegistry.recordMigration(migration.getChunk().getNs(),
+                                                 migration.getChunk(),
+                                                 migration.getSourceShard(),
+                                                 migration.getDestinationShard());
 
                     // Sleep between moves
                     rateLimiter.sleepBetweenMoves();
@@ -841,32 +844,6 @@ public class StrategyBasedBalancer implements Callable<Integer> {
         }
 
         return result.isSuccess();
-    }
-
-    /**
-     * Invalidate chunk cache for specific shards after a successful move.
-     * Invalidates both the ShardClient cache and our balancer-level chunk cache.
-     */
-    private void invalidateCacheForShards(String namespace, String sourceShard, String destShard) {
-        try {
-            logger.debug("Invalidating chunk cache for namespace {} on shards: {}, {}",
-                        namespace, sourceShard, destShard);
-
-            // Invalidate ShardClient's cache
-            shardClient.invalidateChunksForShards(namespace, Arrays.asList(sourceShard, destShard));
-
-            // Invalidate our balancer-level cache for these shards
-            synchronized (balancingLock) {
-                shardChunkCache.remove(sourceShard);
-                shardChunkCache.remove(destShard);
-                shardChunkCacheTimestamp.remove(sourceShard);
-                shardChunkCacheTimestamp.remove(destShard);
-                logger.debug("Invalidated balancer chunk cache for shards: {}, {}", sourceShard, destShard);
-            }
-        } catch (Exception e) {
-            logger.warn("Failed to invalidate chunk cache for namespace {} on shards {}, {}: {}",
-                       namespace, sourceShard, destShard, e.getMessage());
-        }
     }
 
     /**
@@ -1205,74 +1182,11 @@ public class StrategyBasedBalancer implements Callable<Integer> {
     }
 
     /**
-     * Get movable chunks for a specific shard with caching.
-     * Filters out:
-     * - Jumbo chunks (unmovable)
-     * - Chunks from collections with balancing disabled
-     * - config.system.sessions chunks
-     * When namespace-focused balancing is enabled, only returns chunks from active namespaces.
-     *
-     * IMPORTANT: This method uses a cache to avoid loading chunks repeatedly.
-     * Cache is invalidated after migrations or after 5 minutes.
-     * This method must be called within synchronized(balancingLock).
+     * Get movable chunks for a specific shard.
+     * Uses the central ChunkRegistry for consistent, cached chunk tracking.
      */
     private List<Megachunk> getChunksForShard(String shardId) {
-        long now = System.currentTimeMillis();
-        Long lastLoaded = shardChunkCacheTimestamp.get(shardId);
-
-        // Check if cache is valid
-        boolean cacheValid = lastLoaded != null && (now - lastLoaded) < CHUNK_CACHE_TTL_MS;
-
-        if (cacheValid && shardChunkCache.containsKey(shardId)) {
-            List<Megachunk> cached = shardChunkCache.get(shardId);
-            logger.debug("Shard {}: Using cached {} chunks (age: {} seconds)",
-                shardId, cached.size(), (now - lastLoaded) / 1000);
-            return cached;
-        }
-
-        // Cache miss or expired - load chunks
-        logger.debug("Shard {}: Loading chunks (cache {})",
-            shardId, cacheValid ? "valid but missing" : "expired or missing");
-
-        List<Megachunk> chunks;
-
-        // If namespace-focus is enabled and we have active namespaces, only load those
-        if (config.isUseNamespaceFocus() && !activeNamespaces.isEmpty()) {
-            List<Megachunk> allChunks = new ArrayList<>();
-
-            // Load chunks only for active namespaces
-            for (String namespace : activeNamespaces) {
-                List<Megachunk> nsChunks = com.mongodb.util.ChunkUtils.loadChunksForShard(
-                    shardClient,
-                    shardId,
-                    true,  // excludeJumbo
-                    true,  // excludeNoBalance
-                    Collections.singleton(namespace)  // filter by namespace
-                );
-                allChunks.addAll(nsChunks);
-            }
-
-            chunks = allChunks;
-            logger.info("Shard {}: Loaded {} movable chunks from {} active namespaces",
-                shardId, chunks.size(), activeNamespaces.size());
-        } else {
-            // Normal mode: load all chunks
-            chunks = com.mongodb.util.ChunkUtils.loadChunksForShard(
-                shardClient,
-                shardId,
-                true,  // excludeJumbo
-                true,  // excludeNoBalance
-                null   // no namespace filter
-            );
-
-            logger.info("Shard {}: Loaded {} movable chunks", shardId, chunks.size());
-        }
-
-        // Update cache
-        shardChunkCache.put(shardId, chunks);
-        shardChunkCacheTimestamp.put(shardId, now);
-
-        return chunks;
+        return chunkRegistry.getChunksForShard(shardId);
     }
 
     /**
