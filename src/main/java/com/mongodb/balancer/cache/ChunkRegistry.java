@@ -132,10 +132,17 @@ public class ChunkRegistry {
         int totalChunks = 0;
 
         try {
+            // First, count total chunks to verify collection is accessible
+            long totalChunkCount = configDb.getCollection("chunks").countDocuments();
+            logger.info("Registry: Total chunks in config.chunks: {}", totalChunkCount);
+
             // Query all chunks where jumbo != true and noBalance != true
             Document query = new Document();
             query.put("jumbo", new Document("$ne", true));
             query.put("noBalance", new Document("$ne", true));
+
+            long matchingChunks = configDb.getCollection("chunks").countDocuments(query);
+            logger.info("Registry: Chunks matching query (non-jumbo, non-noBalance): {}", matchingChunks);
 
             for (Document chunkDoc : configDb.getCollection("chunks").find(query)) {
                 try {
@@ -178,11 +185,11 @@ public class ChunkRegistry {
                     totalChunks++;
 
                 } catch (Exception e) {
-                    logger.warn("Failed to process chunk document: {}", e.getMessage());
+                    logger.error("Failed to process chunk document: {}", e.getMessage(), e);
                 }
             }
 
-            logger.debug("Registry: Loaded {} total chunks across all shards", totalChunks);
+            logger.info("Registry: Successfully loaded {} chunks from config.chunks", totalChunks);
 
         } catch (Exception e) {
             logger.error("Failed to load chunks from config.chunks", e);
