@@ -787,7 +787,7 @@ public class StrategyBasedBalancer implements Callable<Integer> {
             // Create the migration
             PlannedMigration migration = new PlannedMigration(chunkToMove, sourceShard, destShard);
 
-            logger.info("Worker {}: Acquired migration {} -> {} ({})",
+            logger.debug("Worker {}: Acquired migration {} -> {} ({})",
                        workerId, sourceShard, destShard, chunkToMove.getNs());
 
             return migration;
@@ -799,7 +799,7 @@ public class StrategyBasedBalancer implements Callable<Integer> {
      */
     private boolean executeMigration(PlannedMigration migration, int workerId) {
         long startTime = System.currentTimeMillis();
-        logger.info("Worker {}: Executing migration {} -> {} ({})",
+        logger.debug("Worker {}: Executing migration {} -> {} ({})",
                    workerId,
                    migration.getSourceShard(),
                    migration.getDestinationShard(),

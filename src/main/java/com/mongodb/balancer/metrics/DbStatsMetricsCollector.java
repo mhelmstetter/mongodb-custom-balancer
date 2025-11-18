@@ -93,7 +93,7 @@ public class DbStatsMetricsCollector implements MetricsCollector {
         for (ShardMetricsAccumulator accumulator : shardMetrics.values()) {
             ShardMetrics metrics = accumulator.toShardMetrics(shardClient);
             newMetrics.add(metrics);
-            logger.info("Collected metrics for {}: {}", accumulator.shardId, metrics);
+            logger.debug("Collected metrics for {}: {}", accumulator.shardId, metrics);
         }
 
         this.cachedMetrics = newMetrics;
