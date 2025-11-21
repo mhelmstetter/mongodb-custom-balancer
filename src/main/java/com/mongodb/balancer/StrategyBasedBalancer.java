@@ -861,56 +861,71 @@ public class StrategyBasedBalancer implements Callable<Integer> {
     /**
      * Refresh metrics in background thread.
      * This runs periodically and updates cached metrics without blocking worker threads.
+     * Collects metrics OUTSIDE the lock, then grabs lock briefly to update cache.
      */
     private void refreshMetrics() {
+        long now = System.currentTimeMillis();
+        long lastRefresh = lastMetricsRefreshTime;
+
+        logger.debug("Refreshing metrics (last refresh: {} ms ago)", now - lastRefresh);
+
+        // Collect metrics OUTSIDE the lock (this is the slow part - ~765ms)
+        List<ShardMetrics> newMetrics;
+        List<String> currentActiveNamespaces;
+
         synchronized (balancingLock) {
-            long now = System.currentTimeMillis();
-            logger.debug("Refreshing metrics (last refresh: {} ms ago)",
-                        now - lastMetricsRefreshTime);
+            currentActiveNamespaces = new ArrayList<>(activeNamespaces);
+        }
 
-            // When namespace-focus is enabled, use fast namespace-based metrics
-            // Otherwise use traditional dbStats approach
-            if (config.isUseNamespaceFocus() && namespaceCollector != null) {
-                // Refresh only the active namespaces (much faster)
-                namespaceCollector.refreshNamespaces(activeNamespaces);
+        if (config.isUseNamespaceFocus() && namespaceCollector != null) {
+            // Refresh only the active namespaces (much faster)
+            namespaceCollector.refreshNamespaces(currentActiveNamespaces);
+            newMetrics = namespaceCollector.generateShardMetrics();
+            logger.debug("Refreshed metrics from {} active namespaces", currentActiveNamespaces.size());
+        } else {
+            // Traditional full dbStats collection
+            newMetrics = metricsCollector.collectShardMetrics();
+        }
 
-                // Generate shard metrics from namespace data
-                cachedMetrics = namespaceCollector.generateShardMetrics();
-                cachedScores = calculateWeightedScores(cachedMetrics);
-                lastMetricsRefreshTime = now;
+        // Calculate scores outside the lock too
+        Map<String, Double> newScores = calculateWeightedScores(newMetrics);
 
-                logger.debug("Refreshed metrics from {} active namespaces", activeNamespaces.size());
-            } else {
-                // Traditional full dbStats collection
-                cachedMetrics = metricsCollector.collectShardMetrics();
-                cachedScores = calculateWeightedScores(cachedMetrics);
-                lastMetricsRefreshTime = now;
-            }
+        // Now grab lock BRIEFLY just to update the cached values
+        synchronized (balancingLock) {
+            cachedMetrics = newMetrics;
+            cachedScores = newScores;
+            lastMetricsRefreshTime = now;
+        }
 
-            logShardMetrics(cachedMetrics);
-            logWeightedScores(cachedScores);
+        // Log outside the lock
+        logShardMetrics(newMetrics);
+        logWeightedScores(newScores);
 
-            // Rescan namespaces periodically if namespace-focus is enabled
-            if (config.isUseNamespaceFocus() && namespaceCollector != null) {
-                if (now - lastNamespaceFullScanTime > config.getNamespaceFullScanIntervalMs()) {
-                    logger.info("Performing periodic full namespace scan (last scan: {} minutes ago)",
-                        (now - lastNamespaceFullScanTime) / 60000);
+        // Rescan namespaces periodically if namespace-focus is enabled
+        if (config.isUseNamespaceFocus() && namespaceCollector != null) {
+            long lastScan = lastNamespaceFullScanTime;
+            if (now - lastScan > config.getNamespaceFullScanIntervalMs()) {
+                logger.info("Performing periodic full namespace scan (last scan: {} minutes ago)",
+                    (now - lastScan) / 60000);
 
-                    try {
-                        List<String> imbalancedNamespaces = namespaceCollector.scanAllNamespaces();
-                        lastNamespaceFullScanTime = now;
+                try {
+                    // Scan outside the lock
+                    List<String> imbalancedNamespaces = namespaceCollector.scanAllNamespaces();
 
-                        // Limit to maxActiveNamespaces
-                        if (imbalancedNamespaces.size() > config.getMaxActiveNamespaces()) {
-                            imbalancedNamespaces = imbalancedNamespaces.subList(0, config.getMaxActiveNamespaces());
-                        }
-
-                        // Update active namespaces
-                        activeNamespaces = imbalancedNamespaces;
-                        logger.info("Updated active namespaces to {} most imbalanced collections", activeNamespaces.size());
-                    } catch (Exception e) {
-                        logger.error("Failed to rescan namespaces: {}", e.getMessage());
+                    // Limit to maxActiveNamespaces
+                    if (imbalancedNamespaces.size() > config.getMaxActiveNamespaces()) {
+                        imbalancedNamespaces = imbalancedNamespaces.subList(0, config.getMaxActiveNamespaces());
                     }
+
+                    // Update active namespaces - grab lock briefly
+                    synchronized (balancingLock) {
+                        activeNamespaces = imbalancedNamespaces;
+                        lastNamespaceFullScanTime = now;
+                    }
+
+                    logger.info("Updated active namespaces to {} most imbalanced collections", imbalancedNamespaces.size());
+                } catch (Exception e) {
+                    logger.error("Failed to rescan namespaces: {}", e.getMessage());
                 }
             }
         }
