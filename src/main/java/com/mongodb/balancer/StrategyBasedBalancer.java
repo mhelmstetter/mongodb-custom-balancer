@@ -137,7 +137,6 @@ public class StrategyBasedBalancer implements Callable<Integer> {
     // Continuous balancing state
     private final Object balancingLock = new Object();
     private Set<String> inUseShards = new HashSet<>();
-    private Set<String> inUseNamespaces = new HashSet<>();  // MongoDB allows only 1 migration per namespace
     private List<ShardMetrics> cachedMetrics = new ArrayList<>();
     private Map<String, Double> cachedScores = new HashMap<>();
     private long lastMetricsRefreshTime = 0;
@@ -676,11 +675,10 @@ public class StrategyBasedBalancer implements Callable<Integer> {
                 // Execute the migration
                 boolean success = executeMigration(migration, workerId);
 
-                // Release the shards and namespace
+                // Release the shards
                 synchronized (balancingLock) {
                     inUseShards.remove(migration.getSourceShard());
                     inUseShards.remove(migration.getDestinationShard());
-                    inUseNamespaces.remove(migration.getChunk().getNs());
                     balancingLock.notifyAll();
                 }
 
@@ -784,17 +782,9 @@ public class StrategyBasedBalancer implements Callable<Integer> {
                 return null;
             }
 
-            // Check if namespace is already in use (MongoDB allows only 1 migration per namespace)
-            String namespace = chunkToMove.getNs();
-            if (inUseNamespaces.contains(namespace)) {
-                logger.debug("Worker {}: Namespace {} already in use", workerId, namespace);
-                return null;
-            }
-
-            // Mark shards and namespace as in-use
+            // Mark shards as in-use
             inUseShards.add(sourceShard);
             inUseShards.add(destShard);
-            inUseNamespaces.add(namespace);
 
             // Create the migration
             PlannedMigration migration = new PlannedMigration(chunkToMove, sourceShard, destShard);
@@ -942,9 +932,6 @@ public class StrategyBasedBalancer implements Callable<Integer> {
                                                      Map<String, Double> weightedScores) {
         List<PlannedMigration> migrations = new ArrayList<>();
 
-        // Track namespaces already in use by selected migrations to avoid conflicts
-        Set<String> usedNamespaces = new HashSet<>();
-
         // Available shards pool - removed as migrations are selected
         Set<String> availableShards = allMetrics.stream()
             .map(ShardMetrics::getShardId)
@@ -1005,19 +992,9 @@ public class StrategyBasedBalancer implements Callable<Integer> {
                 continue;
             }
 
-            // Check if this namespace is already in use by another migration
-            String namespace = chunkToMove.getNs();
-            if (usedNamespaces.contains(namespace)) {
-                logger.info("Namespace {} already in use by another migration, skipping source shard {}",
-                          namespace, sourceShard);
-                availableShards.remove(sourceShard);
-                continue;
-            }
-
             // Create the planned migration
             PlannedMigration migration = new PlannedMigration(chunkToMove, sourceShard, destShard);
             migrations.add(migration);
-            usedNamespaces.add(namespace);
 
             logger.info("Selected migration #{}: {} -> {} (chunk: {})",
                        migrations.size(), sourceShard, destShard,
