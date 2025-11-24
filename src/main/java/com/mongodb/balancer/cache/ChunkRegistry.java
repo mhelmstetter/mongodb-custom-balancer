@@ -131,57 +131,56 @@ public class ChunkRegistry {
 
     /**
      * Query config.chunks for all chunks in a namespace that intersect with the given range.
+     * Queries ONLY the specific namespace to avoid loading millions of chunks.
      */
     private List<Megachunk> queryChunksInRange(String namespace, org.bson.BsonDocument minBound, org.bson.BsonDocument maxBound) {
         List<Megachunk> chunks = new ArrayList<>();
 
         try {
-            // Query all chunks (getChunksCache doesn't support query filtering)
-            // We'll filter by namespace and range in memory
-            java.util.Map<String, org.bson.RawBsonDocument> allChunks = shardClient.getChunksCache(new org.bson.BsonDocument());
+            // Query config.chunks directly with namespace filter (efficient!)
+            com.mongodb.client.MongoCollection<org.bson.Document> chunksCollection = shardClient.getChunksCollection();
 
-            logger.debug("Registry: Queried {} total chunks, filtering for namespace {}", allChunks.size(), namespace);
+            // Build query: ns == namespace AND (min == minBound OR max == maxBound)
+            // This finds chunks that were either:
+            // - The moved chunk itself (has original bounds)
+            // - Split remnants (share a boundary with original chunk)
+            org.bson.conversions.Bson query = com.mongodb.client.model.Filters.and(
+                com.mongodb.client.model.Filters.eq("ns", namespace),
+                com.mongodb.client.model.Filters.or(
+                    com.mongodb.client.model.Filters.eq("min", minBound),
+                    com.mongodb.client.model.Filters.eq("max", maxBound)
+                )
+            );
 
             Set<String> shardIds = shardClient.getShardsMap().keySet();
 
-            for (org.bson.RawBsonDocument chunkDoc : allChunks.values()) {
-                // Extract and check namespace
-                String chunkNs = com.mongodb.util.ChunkUtils.extractNamespace(chunkDoc, shardClient);
-                if (!namespace.equals(chunkNs)) {
+            // Execute query - should return 1-3 chunks max
+            for (org.bson.Document chunkDoc : chunksCollection.find(query)) {
+                String shardId = chunkDoc.getString("shard");
+
+                // Skip if shard doesn't exist
+                if (!shardIds.contains(shardId)) {
                     continue;
                 }
 
-                org.bson.BsonDocument chunkMin = chunkDoc.getDocument("min");
-                org.bson.BsonDocument chunkMax = chunkDoc.getDocument("max");
-
-                // Check if this chunk overlaps with our range
-                // Simple check: if min or max matches our bounds, it's part of the result
-                if (chunkMin.equals(minBound) || chunkMax.equals(maxBound) ||
-                    isWithinRange(chunkMin, chunkMax, minBound, maxBound)) {
-
-                    String shardId = chunkDoc.getString("shard").getValue();
-
-                    // Skip if shard doesn't exist
-                    if (!shardIds.contains(shardId)) {
-                        continue;
-                    }
-
-                    // Skip jumbo chunks
-                    if (com.mongodb.util.ChunkUtils.isChunkJumbo(chunkDoc)) {
-                        continue;
-                    }
-
-                    Megachunk chunk = new Megachunk();
-                    chunk.setNs(namespace);
-                    chunk.setShard(shardId);
-                    chunk.setMin(chunkMin);
-                    chunk.setMax(chunkMax);
-
-                    chunks.add(chunk);
+                // Skip jumbo chunks
+                if (chunkDoc.getBoolean("jumbo", false)) {
+                    continue;
                 }
+
+                org.bson.BsonDocument chunkMin = (org.bson.BsonDocument) chunkDoc.get("min");
+                org.bson.BsonDocument chunkMax = (org.bson.BsonDocument) chunkDoc.get("max");
+
+                Megachunk chunk = new Megachunk();
+                chunk.setNs(namespace);
+                chunk.setShard(shardId);
+                chunk.setMin(chunkMin);
+                chunk.setMax(chunkMax);
+
+                chunks.add(chunk);
             }
 
-            logger.debug("Registry: Found {} chunks for namespace {} overlapping range [{} - {})",
+            logger.debug("Registry: Found {} chunks for namespace {} with bounds matching [{} - {})",
                 chunks.size(), namespace, minBound, maxBound);
 
         } catch (Exception e) {
@@ -189,22 +188,6 @@ public class ChunkRegistry {
         }
 
         return chunks;
-    }
-
-    /**
-     * Check if a chunk is within or overlaps the given range.
-     */
-    private boolean isWithinRange(org.bson.BsonDocument chunkMin, org.bson.BsonDocument chunkMax,
-                                  org.bson.BsonDocument rangeMin, org.bson.BsonDocument rangeMax) {
-        // For now, use a simple string comparison as a heuristic
-        // This works for most shard keys but may need refinement for complex keys
-        String chunkMinStr = chunkMin.toString();
-        String chunkMaxStr = chunkMax.toString();
-        String rangeMinStr = rangeMin.toString();
-        String rangeMaxStr = rangeMax.toString();
-
-        // Check if chunk is fully within range
-        return chunkMinStr.compareTo(rangeMinStr) >= 0 && chunkMaxStr.compareTo(rangeMaxStr) <= 0;
     }
 
     /**
