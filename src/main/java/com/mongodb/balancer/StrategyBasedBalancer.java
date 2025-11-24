@@ -531,19 +531,19 @@ public class StrategyBasedBalancer implements Callable<Integer> {
         // Initial metrics refresh
         refreshMetrics();
 
-        // Start background metrics refresher thread
-        long metricsRefreshIntervalMs = config.getMetricsRefreshIntervalMs();
-        long metricsRefreshIntervalSeconds = metricsRefreshIntervalMs / 1000;
-        logger.info("Metrics will be refreshed every {} seconds in background", metricsRefreshIntervalSeconds);
-
+        // Start background metrics refresher thread with adaptive intervals
         metricsRefresher = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "metrics-refresher");
             t.setDaemon(true);
             return t;
         });
+
+        long initialRefreshMs = config.getMetricsRefreshIntervalMs();
+        logger.info("Metrics will be refreshed adaptively (initial interval: {} seconds)", initialRefreshMs / 1000);
+
+        // Schedule first refresh with adaptive rescheduling
         ((java.util.concurrent.ScheduledExecutorService) metricsRefresher)
-            .scheduleAtFixedRate(this::refreshMetrics, metricsRefreshIntervalMs, metricsRefreshIntervalMs,
-                               java.util.concurrent.TimeUnit.MILLISECONDS);
+            .schedule(this::refreshMetricsAdaptive, initialRefreshMs, java.util.concurrent.TimeUnit.MILLISECONDS);
 
         // Submit worker tasks
         int numWorkers = migrationExecutor instanceof java.util.concurrent.ThreadPoolExecutor
@@ -689,6 +689,13 @@ public class StrategyBasedBalancer implements Callable<Integer> {
 
                     // Compare registry with database (debug feature, doesn't hold lock)
                     chunkRegistry.compareRegistryWithDatabase(migration.getChunk().getNs());
+
+                    // If nearly balanced, trigger immediate metrics refresh
+                    // This lets us see effects of this migration before making next decision
+                    if (isNearlyBalanced()) {
+                        logger.info("Worker {}: Cluster nearly balanced - triggering immediate metrics refresh", workerId);
+                        refreshMetrics();
+                    }
 
                     // Sleep between moves BEFORE releasing shards
                     // This gives MongoDB time to complete internal cleanup
@@ -856,6 +863,114 @@ public class StrategyBasedBalancer implements Callable<Integer> {
         }
 
         return result.isSuccess();
+    }
+
+    /**
+     * Adaptive metrics refresh wrapper.
+     * Refreshes metrics, calculates imbalance, and reschedules based on proximity to balanced state.
+     */
+    private void refreshMetricsAdaptive() {
+        refreshMetrics();
+
+        // Calculate imbalance to determine next refresh interval
+        long nextRefreshMs = calculateAdaptiveRefreshInterval();
+
+        // Reschedule next refresh
+        if (metricsRefresher != null && running) {
+            ((java.util.concurrent.ScheduledExecutorService) metricsRefresher)
+                .schedule(this::refreshMetricsAdaptive, nextRefreshMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+        }
+    }
+
+    /**
+     * Check if cluster is nearly balanced (< 0.5 GB imbalance).
+     * Used to trigger immediate metrics refresh after migrations.
+     */
+    private boolean isNearlyBalanced() {
+        List<ShardMetrics> metrics;
+        synchronized (balancingLock) {
+            metrics = new ArrayList<>(cachedMetrics);
+        }
+
+        if (metrics.isEmpty()) {
+            return false;
+        }
+
+        long maxDataSize = Long.MIN_VALUE;
+        long minDataSize = Long.MAX_VALUE;
+
+        for (ShardMetrics shard : metrics) {
+            long dataSize = shard.getDataSize();
+            maxDataSize = Math.max(maxDataSize, dataSize);
+            minDataSize = Math.min(minDataSize, dataSize);
+        }
+
+        long imbalanceBytes = maxDataSize - minDataSize;
+        double imbalanceGB = imbalanceBytes / (1024.0 * 1024.0 * 1024.0);
+
+        return imbalanceGB < 0.5;
+    }
+
+    /**
+     * Calculate next refresh interval based on cluster imbalance.
+     * When highly imbalanced: refresh frequently (e.g., 5 minutes)
+     * When nearly balanced: refresh less frequently (e.g., 15-30 minutes) to let things settle
+     */
+    private long calculateAdaptiveRefreshInterval() {
+        long baseIntervalMs = config.getMetricsRefreshIntervalMs();
+
+        // Get current metrics to calculate imbalance
+        List<ShardMetrics> metrics;
+        synchronized (balancingLock) {
+            metrics = new ArrayList<>(cachedMetrics);
+        }
+
+        if (metrics.isEmpty()) {
+            return baseIntervalMs;
+        }
+
+        // Calculate imbalance: max - min data size
+        long maxDataSize = Long.MIN_VALUE;
+        long minDataSize = Long.MAX_VALUE;
+
+        for (ShardMetrics shard : metrics) {
+            long dataSize = shard.getDataSize();
+            maxDataSize = Math.max(maxDataSize, dataSize);
+            minDataSize = Math.min(minDataSize, dataSize);
+        }
+
+        long imbalanceBytes = maxDataSize - minDataSize;
+        double imbalanceGB = imbalanceBytes / (1024.0 * 1024.0 * 1024.0);
+
+        // Adaptive intervals based on imbalance
+        // When nearly balanced: refresh MORE frequently to avoid oscillations
+        // When highly imbalanced: refresh LESS frequently since direction is clear
+        long nextInterval;
+        String reason;
+
+        if (imbalanceGB >= 2.0) {
+            // Highly imbalanced: slower refresh, direction is clear
+            nextInterval = baseIntervalMs * 3;
+            reason = "highly imbalanced";
+        } else if (imbalanceGB >= 1.0) {
+            // Moderately imbalanced: 2x base interval
+            nextInterval = baseIntervalMs * 2;
+            reason = "moderately imbalanced";
+        } else if (imbalanceGB >= 0.5) {
+            // Slightly imbalanced: refresh every baseInterval/3
+            nextInterval = baseIntervalMs / 3;
+            reason = "slightly imbalanced";
+        } else {
+            // Nearly balanced: refresh after every move (very short interval)
+            // This allows us to see effects of each migration before making next decision
+            nextInterval = 10000; // 10 seconds - just a safety net, migrations will trigger immediate refresh
+            reason = "nearly balanced - refreshing after each move";
+        }
+
+        logger.info("Cluster imbalance: {} GB - Next metrics refresh in {} seconds ({})",
+                   String.format("%.2f", imbalanceGB), nextInterval / 1000, reason);
+
+        return nextInterval;
     }
 
     /**
