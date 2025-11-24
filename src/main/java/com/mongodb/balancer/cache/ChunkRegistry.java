@@ -131,21 +131,32 @@ public class ChunkRegistry {
 
     /**
      * Query config.chunks for all chunks in a namespace that intersect with the given range.
-     * Queries ONLY the specific namespace to avoid loading millions of chunks.
+     * Uses UUID-based lookup since recent MongoDB versions use uuid field instead of ns.
      */
     private List<Megachunk> queryChunksInRange(String namespace, org.bson.BsonDocument minBound, org.bson.BsonDocument maxBound) {
         List<Megachunk> chunks = new ArrayList<>();
 
         try {
-            // Query config.chunks directly with namespace filter (efficient!)
+            // Get the collection UUID from ShardClient's collectionsMap
+            org.bson.Document collectionDoc = shardClient.getCollectionsMap().get(namespace);
+            if (collectionDoc == null) {
+                logger.warn("Registry: No collection metadata found for namespace {}", namespace);
+                return chunks;
+            }
+
+            Object uuidObj = collectionDoc.get("uuid");
+            if (uuidObj == null) {
+                logger.warn("Registry: No UUID found for namespace {}", namespace);
+                return chunks;
+            }
+
+            // Query config.chunks by UUID and boundary matching
             com.mongodb.client.MongoCollection<org.bson.Document> chunksCollection = shardClient.getChunksCollection();
 
-            // Build query: ns == namespace AND (min == minBound OR max == maxBound)
-            // This finds chunks that were either:
-            // - The moved chunk itself (has original bounds)
-            // - Split remnants (share a boundary with original chunk)
+            // Build query: uuid == collectionUUID AND (min == minBound OR max == maxBound)
+            // This finds chunks that share a boundary with the migrated chunk
             org.bson.conversions.Bson query = com.mongodb.client.model.Filters.and(
-                com.mongodb.client.model.Filters.eq("ns", namespace),
+                com.mongodb.client.model.Filters.eq("uuid", uuidObj),
                 com.mongodb.client.model.Filters.or(
                     com.mongodb.client.model.Filters.eq("min", minBound),
                     com.mongodb.client.model.Filters.eq("max", maxBound)
@@ -155,16 +166,20 @@ public class ChunkRegistry {
             Set<String> shardIds = shardClient.getShardsMap().keySet();
 
             // Execute query - should return 1-3 chunks max
+            int matchCount = 0;
             for (org.bson.Document chunkDoc : chunksCollection.find(query)) {
+                matchCount++;
                 String shardId = chunkDoc.getString("shard");
 
                 // Skip if shard doesn't exist
                 if (!shardIds.contains(shardId)) {
+                    logger.debug("Registry: Skipping chunk on unknown shard {}", shardId);
                     continue;
                 }
 
                 // Skip jumbo chunks
                 if (chunkDoc.getBoolean("jumbo", false)) {
+                    logger.debug("Registry: Skipping jumbo chunk");
                     continue;
                 }
 
@@ -180,8 +195,8 @@ public class ChunkRegistry {
                 chunks.add(chunk);
             }
 
-            logger.debug("Registry: Found {} chunks for namespace {} with bounds matching [{} - {})",
-                chunks.size(), namespace, minBound, maxBound);
+            logger.info("Registry: Found {} chunks for namespace {} (uuid={}) matching bounds [{} - {})",
+                matchCount, namespace, uuidObj, minBound, maxBound);
 
         } catch (Exception e) {
             logger.error("Registry: Error querying chunks in range", e);

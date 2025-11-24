@@ -338,6 +338,11 @@ public class StrategyBasedBalancer implements Callable<Integer> {
             shardClient.populateShardMongoClients();
             logger.info("Connected to {} shards", shardClient.getShardMongoClients().size());
 
+            // Populate collections map for UUID lookup
+            logger.info("Loading collection metadata...");
+            shardClient.populateCollectionsMap();
+            logger.info("Loaded {} collections", shardClient.getCollectionsMap().size());
+
             // Disable built-in balancer if configured
             if (config.isDisableBuiltInBalancer()) {
                 logger.info("Disabling MongoDB built-in balancer");

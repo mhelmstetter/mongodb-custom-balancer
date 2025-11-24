@@ -1,0 +1,2 @@
+- do not ever query for all chunks, there could be millions of chunks
+- the chunks collection in recent versions of MongoDB *does not have* the "ns" field, you have to get the uuid from config.collections and query by uuid
