@@ -1,0 +1,368 @@
+2025-11-24 14:14:25,522 INFO  StrategyBasedBalancer - Loading defaults from: /Users/mh/git/mongodb-custom-balancer/balancer.properties
+2025-11-24 14:14:25,525 INFO  StrategyBasedBalancer - ================================================================================
+2025-11-24 14:14:25,525 INFO  StrategyBasedBalancer - MongoDB Strategy-Based Balancer v1.0.0
+2025-11-24 14:14:25,525 INFO  StrategyBasedBalancer - ================================================================================
+2025-11-24 14:14:25,525 INFO  StrategyBasedBalancer - Loading configuration...
+2025-11-24 14:14:25,526 INFO  StrategyBasedBalancer - Loading configuration from file: balancer.properties
+2025-11-24 14:14:25,526 INFO  BalancerConfiguration - Loading properties from file: balancer.properties
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+2025-11-24 14:14:25,570 INFO  FluentPropertyBeanIntrospector - Error when creating PropertyDescriptor for public final void org.apache.commons.configuration2.AbstractConfiguration.setProperty(java.lang.String,java.lang.Object)! Ignoring this property.
+2025-11-24 14:14:25,581 INFO  BalancerConfiguration - Configuration loaded successfully
+2025-11-24 14:14:25,581 INFO  StrategyBasedBalancer - Configuration:
+2025-11-24 14:14:25,581 INFO  StrategyBasedBalancer -   MongoDB URI: mongodb+srv://markh:kji55BJYeB3ZWyjT@cluster0.ufghn.mongodb.net/
+2025-11-24 14:14:25,581 INFO  StrategyBasedBalancer -   Strategies: [dataSize:1.0]
+2025-11-24 14:14:25,581 INFO  StrategyBasedBalancer -   Chunk selector: random
+2025-11-24 14:14:25,584 INFO  StrategyBasedBalancer -   Balancing threshold: 0.50 MB
+2025-11-24 14:14:25,584 INFO  StrategyBasedBalancer -   Max chunks/hour: 0
+2025-11-24 14:14:25,585 INFO  StrategyBasedBalancer -   Max chunks/day: 0
+2025-11-24 14:14:25,585 INFO  StrategyBasedBalancer -   Sleep between moves: 500 ms
+2025-11-24 14:14:25,585 INFO  StrategyBasedBalancer -   Continuous mode: true
+2025-11-24 14:14:25,585 INFO  StrategyBasedBalancer -   Dry run: false
+2025-11-24 14:14:25,585 INFO  StrategyBasedBalancer -   Secondary throttle: true
+2025-11-24 14:14:25,585 INFO  StrategyBasedBalancer -   Wait for delete: true
+2025-11-24 14:14:25,585 INFO  StrategyBasedBalancer - Initializing balancer components...
+2025-11-24 14:14:25,727 INFO  ShardClient - source client, uri: mongodb+srv://*****:*****@cluster0.ufghn.mongodb.net/
+2025-11-24 14:14:27,726 DEBUG ShardClient - source: populateShardList shard: atlas-o3y5yd-shard-0/atlas-o3y5yd-shard-00-00.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-00-01.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-00-02.ufghn.mongodb.net:27017
+2025-11-24 14:14:27,727 DEBUG ShardClient - source: populateShardList shard: atlas-o3y5yd-shard-1/atlas-o3y5yd-shard-01-00.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-01-01.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-01-02.ufghn.mongodb.net:27017
+2025-11-24 14:14:27,727 DEBUG ShardClient - source: populateShardList shard: atlas-o3y5yd-shard-2/atlas-o3y5yd-shard-02-00.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-02-01.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-02-02.ufghn.mongodb.net:27017
+2025-11-24 14:14:27,727 DEBUG ShardClient - source: populateShardList shard: atlas-o3y5yd-shard-3/atlas-o3y5yd-shard-03-00.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-03-01.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-03-02.ufghn.mongodb.net:27017
+2025-11-24 14:14:27,727 DEBUG ShardClient - source: populateShardList complete, 4 shards added
+2025-11-24 14:14:27,795 INFO  ShardClient - source : MongoDB version: 8.0.16, mongos: true
+2025-11-24 14:14:27,796 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-00-00.ufghn.mongodb.net:27016
+2025-11-24 14:14:27,798 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-00-01.ufghn.mongodb.net:27016
+2025-11-24 14:14:27,799 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-00-02.ufghn.mongodb.net:27016
+2025-11-24 14:14:27,799 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-01-00.ufghn.mongodb.net:27016
+2025-11-24 14:14:27,800 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-01-01.ufghn.mongodb.net:27016
+2025-11-24 14:14:27,800 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-01-02.ufghn.mongodb.net:27016
+2025-11-24 14:14:27,801 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-02-00.ufghn.mongodb.net:27016
+2025-11-24 14:14:27,801 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-02-01.ufghn.mongodb.net:27016
+2025-11-24 14:14:27,802 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-02-02.ufghn.mongodb.net:27016
+2025-11-24 14:14:27,803 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-03-00.ufghn.mongodb.net:27016
+2025-11-24 14:14:27,803 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-03-01.ufghn.mongodb.net:27016
+2025-11-24 14:14:27,804 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-03-02.ufghn.mongodb.net:27016
+2025-11-24 14:14:27,804 DEBUG ShardClient - source populateMongosList complete, 12 mongosMongoClients added
+2025-11-24 14:14:27,804 DEBUG ShardClient - source Starting populateCollectionsMap()
+2025-11-24 14:14:28,010 DEBUG ShardClient - source Finished populateCollectionsMap(), 2 collections loaded from config server
+2025-11-24 14:14:29,845 DEBUG ShardClient - source: populateShardList shard: atlas-o3y5yd-shard-0/atlas-o3y5yd-shard-00-00.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-00-01.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-00-02.ufghn.mongodb.net:27017
+2025-11-24 14:14:29,848 DEBUG ShardClient - source: populateShardList shard: atlas-o3y5yd-shard-1/atlas-o3y5yd-shard-01-00.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-01-01.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-01-02.ufghn.mongodb.net:27017
+2025-11-24 14:14:29,848 DEBUG ShardClient - source: populateShardList shard: atlas-o3y5yd-shard-2/atlas-o3y5yd-shard-02-00.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-02-01.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-02-02.ufghn.mongodb.net:27017
+2025-11-24 14:14:29,849 DEBUG ShardClient - source: populateShardList shard: atlas-o3y5yd-shard-3/atlas-o3y5yd-shard-03-00.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-03-01.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-03-02.ufghn.mongodb.net:27017
+2025-11-24 14:14:29,849 DEBUG ShardClient - source: populateShardList complete, 4 shards added
+2025-11-24 14:14:29,989 INFO  ShardClient - source : MongoDB version: 8.0.16, mongos: true
+2025-11-24 14:14:29,991 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-00-00.ufghn.mongodb.net:27016
+2025-11-24 14:14:29,993 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-00-01.ufghn.mongodb.net:27016
+2025-11-24 14:14:29,993 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-00-02.ufghn.mongodb.net:27016
+2025-11-24 14:14:29,994 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-01-00.ufghn.mongodb.net:27016
+2025-11-24 14:14:29,995 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-01-01.ufghn.mongodb.net:27016
+2025-11-24 14:14:29,995 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-01-02.ufghn.mongodb.net:27016
+2025-11-24 14:14:29,996 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-02-00.ufghn.mongodb.net:27016
+2025-11-24 14:14:29,996 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-02-01.ufghn.mongodb.net:27016
+2025-11-24 14:14:29,997 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-02-02.ufghn.mongodb.net:27016
+2025-11-24 14:14:29,997 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-03-00.ufghn.mongodb.net:27016
+2025-11-24 14:14:29,998 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-03-01.ufghn.mongodb.net:27016
+2025-11-24 14:14:29,999 DEBUG ShardClient - populateMongosList() mongos srvHost: cluster0-shard-03-02.ufghn.mongodb.net:27016
+2025-11-24 14:14:30,000 DEBUG ShardClient - source populateMongosList complete, 12 mongosMongoClients added
+2025-11-24 14:14:30,000 INFO  StrategyBasedBalancer - Connecting to 4 shards...
+2025-11-24 14:14:30,000 DEBUG ShardClient - source atlas-o3y5yd-shard-0 populateShardMongoClients() seeds: atlas-o3y5yd-shard-00-00.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-00-01.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-00-02.ufghn.mongodb.net:27017
+2025-11-24 14:14:30,000 DEBUG ShardClient - ***** source - SSL config set from connection string
+2025-11-24 14:14:30,008 DEBUG ShardClient - source - clusterSettings: {hosts=[atlas-o3y5yd-shard-00-00.ufghn.mongodb.net:27017, atlas-o3y5yd-shard-00-01.ufghn.mongodb.net:27017, atlas-o3y5yd-shard-00-02.ufghn.mongodb.net:27017], srvServiceName=mongodb, mode=MULTIPLE, requiredClusterType=UNKNOWN, requiredReplicaSetName='null', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, sslSettings: SslSettings{enabled=true, invalidHostNameAllowed=false, context=null}
+2025-11-24 14:14:31,724 DEBUG ShardClient - source atlas-o3y5yd-shard-1 populateShardMongoClients() seeds: atlas-o3y5yd-shard-01-00.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-01-01.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-01-02.ufghn.mongodb.net:27017
+2025-11-24 14:14:31,725 DEBUG ShardClient - ***** source - SSL config set from connection string
+2025-11-24 14:14:31,732 DEBUG ShardClient - source - clusterSettings: {hosts=[atlas-o3y5yd-shard-01-00.ufghn.mongodb.net:27017, atlas-o3y5yd-shard-01-01.ufghn.mongodb.net:27017, atlas-o3y5yd-shard-01-02.ufghn.mongodb.net:27017], srvServiceName=mongodb, mode=MULTIPLE, requiredClusterType=UNKNOWN, requiredReplicaSetName='null', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, sslSettings: SslSettings{enabled=true, invalidHostNameAllowed=false, context=null}
+2025-11-24 14:14:32,868 DEBUG ShardClient - source atlas-o3y5yd-shard-2 populateShardMongoClients() seeds: atlas-o3y5yd-shard-02-00.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-02-01.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-02-02.ufghn.mongodb.net:27017
+2025-11-24 14:14:32,869 DEBUG ShardClient - ***** source - SSL config set from connection string
+2025-11-24 14:14:32,875 DEBUG ShardClient - source - clusterSettings: {hosts=[atlas-o3y5yd-shard-02-00.ufghn.mongodb.net:27017, atlas-o3y5yd-shard-02-01.ufghn.mongodb.net:27017, atlas-o3y5yd-shard-02-02.ufghn.mongodb.net:27017], srvServiceName=mongodb, mode=MULTIPLE, requiredClusterType=UNKNOWN, requiredReplicaSetName='null', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, sslSettings: SslSettings{enabled=true, invalidHostNameAllowed=false, context=null}
+2025-11-24 14:14:33,834 DEBUG ShardClient - source atlas-o3y5yd-shard-3 populateShardMongoClients() seeds: atlas-o3y5yd-shard-03-00.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-03-01.ufghn.mongodb.net:27017,atlas-o3y5yd-shard-03-02.ufghn.mongodb.net:27017
+2025-11-24 14:14:33,834 DEBUG ShardClient - ***** source - SSL config set from connection string
+2025-11-24 14:14:33,836 DEBUG ShardClient - source - clusterSettings: {hosts=[atlas-o3y5yd-shard-03-00.ufghn.mongodb.net:27017, atlas-o3y5yd-shard-03-01.ufghn.mongodb.net:27017, atlas-o3y5yd-shard-03-02.ufghn.mongodb.net:27017], srvServiceName=mongodb, mode=MULTIPLE, requiredClusterType=UNKNOWN, requiredReplicaSetName='null', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, sslSettings: SslSettings{enabled=true, invalidHostNameAllowed=false, context=null}
+2025-11-24 14:14:34,787 INFO  StrategyBasedBalancer - Connected to 4 shards
+2025-11-24 14:14:34,788 INFO  StrategyBasedBalancer - Loading collection metadata...
+2025-11-24 14:14:34,788 INFO  StrategyBasedBalancer - Loaded 2 collections
+2025-11-24 14:14:34,789 INFO  StrategyBasedBalancer - Disabling MongoDB built-in balancer
+2025-11-24 14:14:34,879 INFO  ChunkMover - Will use moveRange command (MongoDB 8.0.16 >= 6.0)
+2025-11-24 14:14:34,879 INFO  StrategyBasedBalancer - Loading 1 balancing strategies
+2025-11-24 14:14:34,880 INFO  StrategyBasedBalancer -   Loaded strategy: dataSize with weight 1.0
+2025-11-24 14:14:34,880 INFO  StrategyBasedBalancer - Loading chunk selector: random
+2025-11-24 14:14:34,967 INFO  StrategyBasedBalancer - No zones detected - safe to proceed
+2025-11-24 14:14:34,967 INFO  StrategyBasedBalancer - Initializing chunk registry
+2025-11-24 14:14:34,968 INFO  ChunkRegistry - Initializing chunk registry with full load from MongoDB
+2025-11-24 14:14:35,341 DEBUG ShardClient - *** source: loaded 577 chunks into chunksCache
+2025-11-24 14:14:35,341 INFO  ChunkRegistry - Registry: Loaded 577 total chunks from MongoDB
+2025-11-24 14:14:35,350 INFO  ChunkRegistry - Registry: Full refresh completed - 576 chunks across 4 shards in 382ms (0 jumbo, 0 noBalance, 1 config.system.sessions, 0 unknown shard skipped)
+2025-11-24 14:14:35,350 INFO  StrategyBasedBalancer - Initialization complete - max concurrent migrations: 2
+2025-11-24 14:14:35,350 INFO  StrategyBasedBalancer - Starting balancer in continuous mode with 2 workers
+2025-11-24 14:14:35,350 INFO  DbStatsMetricsCollector - Collecting shard metrics from cluster...
+2025-11-24 14:14:36,323 INFO  DbStatsMetricsCollector - Metrics collection completed in 973 ms for 4 shards
+2025-11-24 14:14:36,324 INFO  DataSizeBalancingStrategy - DataSize strategy scores: min=16.01 GB (score=0.0), max=19.59 GB (score=1.0)
+2025-11-24 14:14:36,325 INFO  StrategyBasedBalancer - Shard Metrics:
+2025-11-24 14:14:36,325 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-2: storage=12.37 GB, data=19.59 GB
+2025-11-24 14:14:36,326 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-1: storage=14.45 GB, data=18.91 GB
+2025-11-24 14:14:36,326 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-0: storage=14.00 GB, data=16.91 GB
+2025-11-24 14:14:36,326 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-3: storage=13.47 GB, data=16.01 GB
+2025-11-24 14:14:36,326 INFO  StrategyBasedBalancer - Weighted Scores:
+2025-11-24 14:14:36,331 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-2: 1.000
+2025-11-24 14:14:36,331 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-1: 0.810
+2025-11-24 14:14:36,331 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-0: 0.249
+2025-11-24 14:14:36,331 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-3: 0.000
+2025-11-24 14:14:36,331 INFO  StrategyBasedBalancer - Metrics will be refreshed every 300 seconds in background
+2025-11-24 14:14:36,333 INFO  StrategyBasedBalancer - Worker 0 started
+2025-11-24 14:14:36,333 INFO  StrategyBasedBalancer - Worker 1 started
+2025-11-24 14:14:36,333 INFO  StrategyBasedBalancer - ================================================================================
+2025-11-24 14:14:36,333 INFO  StrategyBasedBalancer - BALANCER STATUS REPORT
+2025-11-24 14:14:36,333 INFO  StrategyBasedBalancer - ================================================================================
+2025-11-24 14:14:36,333 INFO  StrategyBasedBalancer - Uptime: 0 minutes
+2025-11-24 14:14:36,333 INFO  StrategyBasedBalancer - Last successful migration: Never
+2025-11-24 14:14:36,333 INFO  StrategyBasedBalancer - Migrations - Total: 0 successful, 0 failed
+2025-11-24 14:14:36,333 INFO  StrategyBasedBalancer - Migrations - Last hour: 0, Last 24 hours: 0
+2025-11-24 14:14:36,334 INFO  StrategyBasedBalancer - Average migration duration: 0 ms
+2025-11-24 14:14:36,334 INFO  StrategyBasedBalancer - Rate limits - 0/unlimited per hour, 0/unlimited per day
+2025-11-24 14:14:36,335 INFO  DbStatsMetricsCollector - Collecting shard metrics from cluster...
+2025-11-24 14:14:37,156 INFO  DbStatsMetricsCollector - Metrics collection completed in 821 ms for 4 shards
+2025-11-24 14:14:37,157 INFO  DataSizeBalancingStrategy - DataSize strategy scores: min=16.01 GB (score=0.0), max=19.59 GB (score=1.0)
+2025-11-24 14:14:37,157 INFO  StrategyBasedBalancer - Current shard distribution:
+2025-11-24 14:14:37,157 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-2: storage=12.37 GB, data=19.59 GB, score=1.000
+2025-11-24 14:14:37,157 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-1: storage=14.45 GB, data=18.91 GB, score=0.810
+2025-11-24 14:14:37,158 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-0: storage=14.00 GB, data=16.91 GB, score=0.249
+2025-11-24 14:14:37,158 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-3: storage=13.47 GB, data=16.01 GB, score=0.000
+2025-11-24 14:14:37,159 INFO  StrategyBasedBalancer - Balance status: UNBALANCED (migrations available)
+2025-11-24 14:14:37,159 INFO  StrategyBasedBalancer - ================================================================================
+2025-11-24 14:14:37,159 INFO  StrategyBasedBalancer - Status reports will be printed every 60 seconds
+2025-11-24 14:14:39,487 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 3, "i": 14395465}}-{"_id": {"w": 3, "i": 14536597}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:14:39,487 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (3152 ms)
+2025-11-24 14:14:39,745 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 2, "i": 4939621}}-{"_id": {"w": 2, "i": 5080753}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:14:39,745 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (2586 ms)
+2025-11-24 14:14:39,922 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:14:39,923 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 3, "i": 14395465}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:14:40,011 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:14:40,011 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 2, "i": 4939621}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:14:42,264 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 3, "i": 1}}-{"_id": {"w": 3, "i": 141133}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:14:42,267 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (1838 ms)
+2025-11-24 14:14:42,358 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:14:42,358 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 3, "i": 1}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:14:43,073 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 3, "i": 564529}}-{"_id": {"w": 3, "i": 705661}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:14:43,074 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (2558 ms)
+2025-11-24 14:14:43,152 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:14:43,153 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 3, "i": 564529}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:14:45,509 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 7903393}}-{"_id": {"w": 1, "i": 8044525}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:14:45,509 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2646 ms)
+2025-11-24 14:14:45,823 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:14:45,824 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 7903393}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:14:46,452 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 1270189}}-{"_id": {"w": 1, "i": 1411321}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:14:46,453 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (2796 ms)
+2025-11-24 14:14:46,545 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:14:46,546 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 1270189}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:14:48,206 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 0, "i": 423397}}-{"_id": {"w": 0, "i": 564529}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:14:48,206 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (1878 ms)
+2025-11-24 14:14:48,298 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:14:48,298 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 0, "i": 423397}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:14:48,529 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 18814465}}-{"_id": {"w": 1, "i": 18899969}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:14:48,529 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (1479 ms)
+2025-11-24 14:14:48,608 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:14:48,608 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 18814465}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:14:51,710 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 7479997}}-{"_id": {"w": 1, "i": 7621129}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:14:51,710 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2910 ms)
+2025-11-24 14:14:51,791 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:14:51,792 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 7479997}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:14:52,000 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 8044525}}-{"_id": {"w": 1, "i": 8185657}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:14:52,000 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (2890 ms)
+2025-11-24 14:14:52,083 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:14:52,083 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 8044525}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:14:54,768 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 3, "i": 13407541}}-{"_id": {"w": 3, "i": 13548673}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:14:54,769 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2475 ms)
+2025-11-24 14:14:54,853 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:14:54,854 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 3, "i": 13407541}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:14:55,088 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 2, "i": 4092829}}-{"_id": {"w": 2, "i": 4233961}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:14:55,088 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (2501 ms)
+2025-11-24 14:14:55,172 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:14:55,172 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 2, "i": 4092829}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:14:58,212 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 0, "i": 7338865}}-{"_id": {"w": 0, "i": 7479997}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:14:58,213 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2853 ms)
+2025-11-24 14:14:58,293 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:14:58,293 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 0, "i": 7338865}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:14:58,349 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 3, "i": 8467921}}-{"_id": {"w": 3, "i": 8609053}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:14:58,349 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (2671 ms)
+2025-11-24 14:14:58,434 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:14:58,435 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 3, "i": 8467921}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:15:00,758 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 0, "i": 1129057}}-{"_id": {"w": 0, "i": 1270189}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:00,760 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (1960 ms)
+2025-11-24 14:15:01,300 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:01,301 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 0, "i": 1129057}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:01,651 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 8326789}}-{"_id": {"w": 1, "i": 8467921}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:15:01,652 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (2713 ms)
+2025-11-24 14:15:01,862 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:01,863 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 8326789}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:15:04,996 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 2, "i": 3246037}}-{"_id": {"w": 2, "i": 3387169}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:04,996 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (3192 ms)
+2025-11-24 14:15:05,081 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:05,081 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 2, "i": 3246037}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:05,610 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 3, "i": 12137353}}-{"_id": {"w": 3, "i": 12278485}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:15:05,611 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (3248 ms)
+2025-11-24 14:15:05,684 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:05,684 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 3, "i": 12137353}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:15:08,456 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 3, "i": 846793}}-{"_id": {"w": 3, "i": 987925}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:08,457 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2870 ms)
+2025-11-24 14:15:08,530 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 11572825}}-{"_id": {"w": 1, "i": 11713957}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:15:08,531 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (2344 ms)
+2025-11-24 14:15:08,534 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:08,534 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 3, "i": 846793}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:08,631 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:08,632 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 11572825}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:15:10,986 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 0, "i": 5504149}}-{"_id": {"w": 0, "i": 5645281}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:15:10,986 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (1850 ms)
+2025-11-24 14:15:11,879 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 3, "i": 19372697}}-{"_id": {"w": 3, "i": 19513829}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:11,880 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2845 ms)
+2025-11-24 14:15:12,088 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:12,088 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 0, "i": 5504149}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:15:12,826 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:12,827 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 3, "i": 19372697}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:14,928 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 19867108}}-{"_id": {"w": 2, "i": 1}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:15:14,928 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (2339 ms)
+2025-11-24 14:15:15,023 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:15,023 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 19867108}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:15:15,443 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 2, "i": 10161505}}-{"_id": {"w": 2, "i": 10302637}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:15,443 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2114 ms)
+2025-11-24 14:15:15,819 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:15,820 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 2, "i": 10161505}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:17,802 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 7338865}}-{"_id": {"w": 1, "i": 7479997}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:15:17,803 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (2277 ms)
+2025-11-24 14:15:18,163 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:18,163 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 7338865}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:15:18,651 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 15524521}}-{"_id": {"w": 1, "i": 15665653}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:18,652 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2326 ms)
+2025-11-24 14:15:18,729 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:18,729 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 15524521}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:20,512 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 5363017}}-{"_id": {"w": 1, "i": 5504149}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:15:20,513 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (1845 ms)
+2025-11-24 14:15:20,589 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:20,589 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 5363017}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:15:22,019 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 0, "i": 19464497}}-{"_id": {"w": 0, "i": 19605629}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:22,019 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2787 ms)
+2025-11-24 14:15:22,134 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:22,135 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 0, "i": 19464497}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:23,161 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 0, "i": 15665653}}-{"_id": {"w": 0, "i": 15806785}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:15:23,162 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (2070 ms)
+2025-11-24 14:15:23,244 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:23,245 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 0, "i": 15665653}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:15:24,484 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 0, "i": 12137353}}-{"_id": {"w": 0, "i": 12278485}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:24,484 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (1844 ms)
+2025-11-24 14:15:24,581 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:24,582 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 0, "i": 12137353}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:26,806 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 9738109}}-{"_id": {"w": 1, "i": 9879241}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:15:26,806 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (3056 ms)
+2025-11-24 14:15:26,883 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:26,884 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 9738109}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:15:27,003 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 3, "i": 15101125}}-{"_id": {"w": 3, "i": 15242257}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:27,004 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (1917 ms)
+2025-11-24 14:15:27,085 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:27,085 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 3, "i": 15101125}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:30,098 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 2, "i": 1552453}}-{"_id": {"w": 2, "i": 1693585}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:30,098 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2507 ms)
+2025-11-24 14:15:30,167 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:30,167 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 2, "i": 1552453}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:30,186 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 2, "i": 4657357}}-{"_id": {"w": 2, "i": 4798489}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:15:30,186 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (2797 ms)
+2025-11-24 14:15:30,329 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:30,330 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 2, "i": 4657357}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:15:33,574 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 2, "i": 1693585}}-{"_id": {"w": 2, "i": 1834717}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:15:33,575 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (2742 ms)
+2025-11-24 14:15:33,586 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 3, "i": 16089049}}-{"_id": {"w": 3, "i": 16230181}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:33,587 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2918 ms)
+2025-11-24 14:15:33,649 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:33,649 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 2, "i": 1693585}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:15:33,723 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:33,723 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 3, "i": 16089049}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:36,048 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 0, "i": 13407541}}-{"_id": {"w": 0, "i": 13548673}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:36,048 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (1823 ms)
+2025-11-24 14:15:36,130 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:36,131 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 0, "i": 13407541}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:36,818 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 2, "i": 8326789}}-{"_id": {"w": 2, "i": 8467921}}] from atlas-o3y5yd-shard-1 to atlas-o3y5yd-shard-0
+2025-11-24 14:15:36,818 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-1 -> atlas-o3y5yd-shard-0 (2666 ms)
+2025-11-24 14:15:36,912 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:36,913 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 2, "i": 8326789}} -> atlas-o3y5yd-shard-0 (no split)
+2025-11-24 14:15:37,163 INFO  StrategyBasedBalancer - ================================================================================
+2025-11-24 14:15:37,163 INFO  StrategyBasedBalancer - BALANCER STATUS REPORT
+2025-11-24 14:15:37,163 INFO  StrategyBasedBalancer - ================================================================================
+2025-11-24 14:15:37,163 INFO  StrategyBasedBalancer - Uptime: 1 minutes
+2025-11-24 14:15:37,163 INFO  StrategyBasedBalancer - Last successful migration: 0 minutes ago
+2025-11-24 14:15:37,163 INFO  StrategyBasedBalancer - Migrations - Total: 38 successful, 0 failed
+2025-11-24 14:15:37,164 INFO  StrategyBasedBalancer - Migrations - Last hour: 38, Last 24 hours: 38
+2025-11-24 14:15:37,164 INFO  StrategyBasedBalancer - Average migration duration: 2481 ms
+2025-11-24 14:15:37,164 INFO  StrategyBasedBalancer - Rate limits - 38/unlimited per hour, 38/unlimited per day
+2025-11-24 14:15:37,164 INFO  DbStatsMetricsCollector - Collecting shard metrics from cluster...
+2025-11-24 14:15:38,088 INFO  DbStatsMetricsCollector - Metrics collection completed in 924 ms for 4 shards
+2025-11-24 14:15:38,090 INFO  DataSizeBalancingStrategy - DataSize strategy scores: min=18.40 GB (score=0.0), max=19.59 GB (score=1.0)
+2025-11-24 14:15:38,090 INFO  StrategyBasedBalancer - Current shard distribution:
+2025-11-24 14:15:38,090 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-2: storage=12.37 GB, data=19.59 GB, score=1.000
+2025-11-24 14:15:38,090 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-1: storage=14.45 GB, data=18.91 GB, score=0.430
+2025-11-24 14:15:38,090 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-0: storage=14.00 GB, data=19.21 GB, score=0.680
+2025-11-24 14:15:38,090 INFO  StrategyBasedBalancer -   atlas-o3y5yd-shard-3: storage=13.47 GB, data=18.40 GB, score=0.000
+2025-11-24 14:15:38,090 INFO  StrategyBasedBalancer - Balance status: UNBALANCED (migrations available)
+2025-11-24 14:15:38,090 INFO  StrategyBasedBalancer - ================================================================================
+2025-11-24 14:15:38,756 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 0, "i": 14395465}}-{"_id": {"w": 0, "i": 14536597}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:38,756 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2119 ms)
+2025-11-24 14:15:38,898 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:38,898 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 0, "i": 14395465}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:41,721 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 2, "i": 10867165}}-{"_id": {"w": 2, "i": 11008297}}] from atlas-o3y5yd-shard-0 to atlas-o3y5yd-shard-1
+2025-11-24 14:15:41,722 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-0 -> atlas-o3y5yd-shard-1 (3632 ms)
+2025-11-24 14:15:41,817 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:41,818 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 2, "i": 10867165}} -> atlas-o3y5yd-shard-1 (no split)
+2025-11-24 14:15:42,240 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 3, "i": 9455845}}-{"_id": {"w": 3, "i": 9596977}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:42,240 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2839 ms)
+2025-11-24 14:15:42,312 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:42,313 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 3, "i": 9455845}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:44,558 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 2, "i": 15806785}}-{"_id": {"w": 2, "i": 15947917}}] from atlas-o3y5yd-shard-0 to atlas-o3y5yd-shard-1
+2025-11-24 14:15:44,559 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-0 -> atlas-o3y5yd-shard-1 (2240 ms)
+2025-11-24 14:15:44,664 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 0, "i": 8609053}}-{"_id": {"w": 0, "i": 8750185}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:44,664 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (1846 ms)
+2025-11-24 14:15:44,675 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:44,675 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 2, "i": 15806785}} -> atlas-o3y5yd-shard-1 (no split)
+2025-11-24 14:15:44,759 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:44,760 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 0, "i": 8609053}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:46,763 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 8185657}}-{"_id": {"w": 1, "i": 8326789}}] from atlas-o3y5yd-shard-0 to atlas-o3y5yd-shard-1
+2025-11-24 14:15:46,763 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-0 -> atlas-o3y5yd-shard-1 (1583 ms)
+2025-11-24 14:15:46,853 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:46,854 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 8185657}} -> atlas-o3y5yd-shard-1 (no split)
+2025-11-24 14:15:48,232 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 3, "i": 8609053}}-{"_id": {"w": 3, "i": 8750185}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:48,232 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2968 ms)
+2025-11-24 14:15:48,318 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:48,318 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 3, "i": 8609053}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:49,618 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 3, "i": 6915469}}-{"_id": {"w": 3, "i": 7056601}}] from atlas-o3y5yd-shard-0 to atlas-o3y5yd-shard-1
+2025-11-24 14:15:49,619 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-0 -> atlas-o3y5yd-shard-1 (2261 ms)
+2025-11-24 14:15:49,707 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:49,708 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 3, "i": 6915469}} -> atlas-o3y5yd-shard-1 (no split)
+2025-11-24 14:15:50,741 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 14818861}}-{"_id": {"w": 1, "i": 14959993}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:50,741 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (1919 ms)
+2025-11-24 14:15:50,826 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:50,826 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 14818861}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:52,639 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 14113201}}-{"_id": {"w": 1, "i": 14254333}}] from atlas-o3y5yd-shard-0 to atlas-o3y5yd-shard-1
+2025-11-24 14:15:52,640 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-0 -> atlas-o3y5yd-shard-1 (2431 ms)
+2025-11-24 14:15:52,730 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:52,730 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 14113201}} -> atlas-o3y5yd-shard-1 (no split)
+2025-11-24 14:15:54,053 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 3, "i": 5363017}}-{"_id": {"w": 3, "i": 5504149}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:54,053 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2725 ms)
+2025-11-24 14:15:54,125 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:54,125 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 3, "i": 5363017}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:55,601 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 2822641}}-{"_id": {"w": 1, "i": 2963773}}] from atlas-o3y5yd-shard-0 to atlas-o3y5yd-shard-1
+2025-11-24 14:15:55,602 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-0 -> atlas-o3y5yd-shard-1 (2371 ms)
+2025-11-24 14:15:55,689 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:55,692 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 2822641}} -> atlas-o3y5yd-shard-1 (no split)
+2025-11-24 14:15:56,502 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 0, "i": 12278485}}-{"_id": {"w": 0, "i": 12419617}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:56,502 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (1876 ms)
+2025-11-24 14:15:56,583 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:56,584 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 0, "i": 12278485}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:15:58,155 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 0, "i": 12701881}}-{"_id": {"w": 0, "i": 12843013}}] from atlas-o3y5yd-shard-0 to atlas-o3y5yd-shard-1
+2025-11-24 14:15:58,155 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-0 -> atlas-o3y5yd-shard-1 (1958 ms)
+2025-11-24 14:15:58,252 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:58,252 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 0, "i": 12701881}} -> atlas-o3y5yd-shard-1 (no split)
+2025-11-24 14:15:59,541 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 1, "i": 15806785}}-{"_id": {"w": 1, "i": 15947917}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:15:59,541 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2456 ms)
+2025-11-24 14:15:59,622 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:15:59,622 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 1, "i": 15806785}} -> atlas-o3y5yd-shard-3 (no split)
+2025-11-24 14:16:01,895 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 2, "i": 9173581}}-{"_id": {"w": 2, "i": 9314713}}] from atlas-o3y5yd-shard-0 to atlas-o3y5yd-shard-1
+2025-11-24 14:16:01,895 INFO  StrategyBasedBalancer - Worker 1: Migration completed successfully atlas-o3y5yd-shard-0 -> atlas-o3y5yd-shard-1 (3139 ms)
+2025-11-24 14:16:02,147 INFO  ChunkMover - Successfully moved chunk POCDB.POCCOLL[{"_id": {"w": 2, "i": 8467921}}-{"_id": {"w": 2, "i": 8609053}}] from atlas-o3y5yd-shard-2 to atlas-o3y5yd-shard-3
+2025-11-24 14:16:02,148 INFO  StrategyBasedBalancer - Worker 0: Migration completed successfully atlas-o3y5yd-shard-2 -> atlas-o3y5yd-shard-3 (2023 ms)
+2025-11-24 14:16:02,611 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:16:02,612 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 2, "i": 9173581}} -> atlas-o3y5yd-shard-1 (no split)
+2025-11-24 14:16:02,746 INFO  ChunkRegistry - Registry: Found 1 chunks for namespace POCDB.POCCOLL (uuid=f6d3affa-1302-4e85-ae05-55f5d14692d2) matching bounds
+2025-11-24 14:16:02,747 INFO  ChunkRegistry - Registry: Updated chunk POCDB.POCCOLL:{"_id": {"w": 2, "i": 8467921}} -> atlas-o3y5yd-shard-3 (no split)

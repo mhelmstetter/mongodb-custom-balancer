@@ -28,6 +28,7 @@ public class ChunkRegistry {
     private final Map<String, Set<String>> shardToChunks = new ConcurrentHashMap<>();
 
     private volatile long lastFullRefreshTime = 0;
+    private volatile boolean enableRegistryComparison = false;  // Debug feature
 
     public ChunkRegistry(ShardClient shardClient, long refreshIntervalMs) {
         this.shardClient = shardClient;
@@ -78,11 +79,114 @@ public class ChunkRegistry {
 
         logger.debug("Registry: Recording migration {} from {} to {}", oldChunkKey, fromShard, toShard);
 
-        // Simple update: just change the shard assignment
-        // Note: This doesn't detect chunk splits during migration, but querying MongoDB
-        // for every migration is too expensive. The registry will be refreshed periodically.
-        updateChunkShard(namespace, oldChunkKey, fromShard, toShard);
-        logger.debug("Registry: Updated chunk {} shard assignment: {} -> {}", oldChunkKey, fromShard, toShard);
+        try {
+            // Query config.chunks to find all chunks that resulted from this migration
+            List<Megachunk> resultingChunks = queryChunksInRange(namespace, chunk.getMin(), chunk.getMax());
+
+            if (resultingChunks.isEmpty()) {
+                logger.warn("Registry: No chunks found for migrated range {} - falling back to simple update", oldChunkKey);
+                updateChunkShard(namespace, oldChunkKey, fromShard, toShard);
+                return;
+            }
+
+            // Remove the old chunk entry
+            removeChunkFromRegistry(namespace, oldChunkKey, fromShard);
+
+            // Add all resulting chunks
+            for (Megachunk resultChunk : resultingChunks) {
+                String newChunkKey = makeChunkKey(namespace, resultChunk);
+                String currentShard = resultChunk.getShard();
+
+                registry.computeIfAbsent(namespace, k -> new ConcurrentHashMap<>())
+                    .put(newChunkKey, new ChunkInfo(resultChunk, currentShard));
+
+                shardToChunks.computeIfAbsent(currentShard, k -> ConcurrentHashMap.newKeySet())
+                    .add(newChunkKey);
+            }
+
+            if (resultingChunks.size() == 1) {
+                logger.info("Registry: Updated chunk {} -> {} (no split)", oldChunkKey, toShard);
+            } else {
+                logger.info("Registry: Chunk {} was split into {} chunks during migration",
+                    oldChunkKey, resultingChunks.size());
+                for (Megachunk resultChunk : resultingChunks) {
+                    logger.info("  - {} on shard {}", makeChunkKey(namespace, resultChunk), resultChunk.getShard());
+                }
+            }
+
+        } catch (Exception e) {
+            logger.error("Registry: Failed to query resulting chunks, falling back to simple update", e);
+            updateChunkShard(namespace, oldChunkKey, fromShard, toShard);
+        }
+    }
+
+    /**
+     * Query config.chunks for chunks that share boundaries with the given range.
+     * Uses UUID + min/max boundary matching.
+     */
+    private List<Megachunk> queryChunksInRange(String namespace, org.bson.BsonDocument minBound, org.bson.BsonDocument maxBound) {
+        List<Megachunk> chunks = new ArrayList<>();
+
+        try {
+            // Get collection UUID
+            org.bson.Document collectionDoc = shardClient.getCollectionsMap().get(namespace);
+            if (collectionDoc == null) {
+                logger.warn("Registry: No collection metadata found for namespace {}", namespace);
+                return chunks;
+            }
+
+            Object uuidObj = collectionDoc.get("uuid");
+            if (uuidObj == null) {
+                logger.warn("Registry: No UUID found for namespace {}", namespace);
+                return chunks;
+            }
+
+            // Query: uuid == collectionUUID AND (min == minBound OR max == maxBound)
+            com.mongodb.client.MongoCollection<org.bson.RawBsonDocument> chunksCollection = shardClient.getChunksCollectionRaw();
+            org.bson.conversions.Bson query = com.mongodb.client.model.Filters.and(
+                com.mongodb.client.model.Filters.eq("uuid", uuidObj),
+                com.mongodb.client.model.Filters.or(
+                    com.mongodb.client.model.Filters.eq("min", minBound),
+                    com.mongodb.client.model.Filters.eq("max", maxBound)
+                )
+            );
+
+            Set<String> shardIds = shardClient.getShardsMap().keySet();
+            int matchCount = 0;
+
+            for (org.bson.RawBsonDocument chunkDoc : chunksCollection.find(query)) {
+                matchCount++;
+                String shardId = chunkDoc.getString("shard").getValue();
+
+                if (!shardIds.contains(shardId)) {
+                    logger.debug("Registry: Skipping chunk on unknown shard {}", shardId);
+                    continue;
+                }
+
+                if (com.mongodb.util.ChunkUtils.isChunkJumbo(chunkDoc)) {
+                    logger.debug("Registry: Skipping jumbo chunk");
+                    continue;
+                }
+
+                org.bson.BsonDocument chunkMin = chunkDoc.getDocument("min");
+                org.bson.BsonDocument chunkMax = chunkDoc.getDocument("max");
+
+                Megachunk chunk = new Megachunk();
+                chunk.setNs(namespace);
+                chunk.setShard(shardId);
+                chunk.setMin(chunkMin);
+                chunk.setMax(chunkMax);
+
+                chunks.add(chunk);
+            }
+
+            logger.info("Registry: Found {} chunks for namespace {} (uuid={}) matching bounds", matchCount, namespace, uuidObj);
+
+        } catch (Exception e) {
+            logger.error("Registry: Error querying chunks in range", e);
+        }
+
+        return chunks;
     }
 
     /**
@@ -280,6 +384,117 @@ public class ChunkRegistry {
         stats.put("shards", shardToChunks.size());
         stats.put("lastRefreshAgeSeconds", (System.currentTimeMillis() - lastFullRefreshTime) / 1000);
         return stats;
+    }
+
+    /**
+     * Compare in-memory registry with MongoDB for a specific namespace.
+     * This is a debugging feature to identify registry inconsistencies.
+     * Note: Snapshots memory state, then releases lock before querying MongoDB to avoid blocking other workers.
+     */
+    public void compareRegistryWithDatabase(String namespace) {
+        if (!enableRegistryComparison) {
+            return;
+        }
+
+        try {
+            logger.info("Registry: Comparing in-memory state with MongoDB for namespace {}", namespace);
+
+            // Get collection UUID
+            org.bson.Document collectionDoc = shardClient.getCollectionsMap().get(namespace);
+            if (collectionDoc == null) {
+                logger.warn("Registry: Cannot compare - no collection metadata for namespace {}", namespace);
+                return;
+            }
+
+            Object uuidObj = collectionDoc.get("uuid");
+            if (uuidObj == null) {
+                logger.warn("Registry: Cannot compare - no UUID for namespace {}", namespace);
+                return;
+            }
+
+            // Snapshot in-memory state FIRST (while holding lock via caller's synchronized context)
+            Map<String, String> memoryChunkMap = new HashMap<>();
+            synchronized (this) {
+                Map<String, ChunkInfo> memoryChunks = registry.get(namespace);
+                if (memoryChunks != null) {
+                    for (Map.Entry<String, ChunkInfo> entry : memoryChunks.entrySet()) {
+                        memoryChunkMap.put(entry.getKey(), entry.getValue().currentShard);
+                    }
+                }
+            }
+            // Lock is released here - other workers can now update registry while we query MongoDB
+
+            // Query all chunks for this namespace from MongoDB (slow operation, ~500ms)
+            com.mongodb.client.MongoCollection<org.bson.RawBsonDocument> chunksCollection = shardClient.getChunksCollectionRaw();
+            org.bson.conversions.Bson query = com.mongodb.client.model.Filters.eq("uuid", uuidObj);
+
+            Map<String, String> dbChunks = new HashMap<>();  // chunkKey -> shard
+            Set<String> shardIds = shardClient.getShardsMap().keySet();
+
+            for (org.bson.RawBsonDocument chunkDoc : chunksCollection.find(query)) {
+                String shardId = chunkDoc.getString("shard").getValue();
+                if (!shardIds.contains(shardId)) {
+                    continue;
+                }
+                if (com.mongodb.util.ChunkUtils.isChunkJumbo(chunkDoc)) {
+                    continue;
+                }
+
+                org.bson.BsonDocument chunkMin = chunkDoc.getDocument("min");
+                org.bson.BsonDocument chunkMax = chunkDoc.getDocument("max");
+
+                Megachunk chunk = new Megachunk();
+                chunk.setNs(namespace);
+                chunk.setMin(chunkMin);
+                chunk.setMax(chunkMax);
+
+                String chunkKey = makeChunkKey(namespace, chunk);
+                dbChunks.put(chunkKey, shardId);
+            }
+
+            // Compare snapshot with MongoDB
+            int missingInMemory = 0;
+            int missingInDb = 0;
+            int shardMismatch = 0;
+
+            // Check for chunks in DB but not in memory
+            for (String chunkKey : dbChunks.keySet()) {
+                if (!memoryChunkMap.containsKey(chunkKey)) {
+                    missingInMemory++;
+                    logger.warn("Registry MISMATCH: Chunk {} exists in MongoDB (shard={}) but NOT in memory",
+                        chunkKey, dbChunks.get(chunkKey));
+                }
+            }
+
+            // Check for chunks in memory but not in DB, and shard mismatches
+            for (Map.Entry<String, String> entry : memoryChunkMap.entrySet()) {
+                String chunkKey = entry.getKey();
+                String memoryShard = entry.getValue();
+
+                if (!dbChunks.containsKey(chunkKey)) {
+                    missingInDb++;
+                    logger.warn("Registry MISMATCH: Chunk {} exists in memory (shard={}) but NOT in MongoDB",
+                        chunkKey, memoryShard);
+                } else {
+                    String dbShard = dbChunks.get(chunkKey);
+                    if (!memoryShard.equals(dbShard)) {
+                        shardMismatch++;
+                        logger.warn("Registry MISMATCH: Chunk {} shard differs - memory={}, MongoDB={}",
+                            chunkKey, memoryShard, dbShard);
+                    }
+                }
+            }
+
+            if (missingInMemory == 0 && missingInDb == 0 && shardMismatch == 0) {
+                logger.info("Registry: Comparison PASSED - {} chunks match MongoDB exactly", dbChunks.size());
+            } else {
+                logger.error("Registry: Comparison FAILED - missingInMemory={}, missingInDb={}, shardMismatch={}, dbTotal={}, memoryTotal={}",
+                    missingInMemory, missingInDb, shardMismatch, dbChunks.size(), memoryChunkMap.size());
+            }
+
+        } catch (Exception e) {
+            logger.error("Registry: Error during comparison", e);
+        }
     }
 
     /**

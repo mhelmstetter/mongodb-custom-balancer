@@ -680,13 +680,6 @@ public class StrategyBasedBalancer implements Callable<Integer> {
                 // Execute the migration
                 boolean success = executeMigration(migration, workerId);
 
-                // Release the shards
-                synchronized (balancingLock) {
-                    inUseShards.remove(migration.getSourceShard());
-                    inUseShards.remove(migration.getDestinationShard());
-                    balancingLock.notifyAll();
-                }
-
                 if (success) {
                     // Update chunk registry with the migration (no reload needed)
                     chunkRegistry.recordMigration(migration.getChunk().getNs(),
@@ -694,8 +687,20 @@ public class StrategyBasedBalancer implements Callable<Integer> {
                                                  migration.getSourceShard(),
                                                  migration.getDestinationShard());
 
-                    // Sleep between moves
+                    // Compare registry with database (debug feature, doesn't hold lock)
+                    chunkRegistry.compareRegistryWithDatabase(migration.getChunk().getNs());
+
+                    // Sleep between moves BEFORE releasing shards
+                    // This gives MongoDB time to complete internal cleanup
                     rateLimiter.sleepBetweenMoves();
+                }
+
+                // Release the shards AFTER sleep
+                // This prevents other workers from reusing shards while MongoDB still has internal locks
+                synchronized (balancingLock) {
+                    inUseShards.remove(migration.getSourceShard());
+                    inUseShards.remove(migration.getDestinationShard());
+                    balancingLock.notifyAll();
                 }
 
             } catch (InterruptedException e) {
