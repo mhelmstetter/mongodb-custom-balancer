@@ -70,14 +70,152 @@ public class ChunkRegistry {
     }
 
     /**
-     * Record a chunk migration - update the registry without reloading from MongoDB.
+     * Record a chunk migration - query MongoDB to get actual resulting chunks.
+     * This handles cases where moveRange splits the chunk during migration.
      */
     public synchronized void recordMigration(String namespace, Megachunk chunk, String fromShard, String toShard) {
-        String chunkKey = makeChunkKey(namespace, chunk);
+        String oldChunkKey = makeChunkKey(namespace, chunk);
 
-        logger.debug("Registry: Recording migration {} from {} to {}", chunkKey, fromShard, toShard);
+        logger.debug("Registry: Recording migration {} from {} to {}", oldChunkKey, fromShard, toShard);
 
-        // Update chunk info
+        try {
+            // Query config.chunks to find all chunks that resulted from this migration
+            // This could be:
+            // 1. A single chunk (no split) with original bounds
+            // 2. Multiple chunks (split occurred) that cover the original range
+            List<Megachunk> resultingChunks = queryChunksInRange(namespace, chunk.getMin(), chunk.getMax());
+
+            if (resultingChunks.isEmpty()) {
+                logger.warn("Registry: No chunks found for migrated range {} - falling back to simple update", oldChunkKey);
+                // Fallback: just update shard assignment
+                updateChunkShard(namespace, oldChunkKey, fromShard, toShard);
+                return;
+            }
+
+            // Remove the old chunk entry
+            removeChunkFromRegistry(namespace, oldChunkKey, fromShard);
+
+            // Add all resulting chunks
+            int addedCount = 0;
+            for (Megachunk resultChunk : resultingChunks) {
+                String newChunkKey = makeChunkKey(namespace, resultChunk);
+                String currentShard = resultChunk.getShard();
+
+                // Add to namespace map
+                registry.computeIfAbsent(namespace, k -> new ConcurrentHashMap<>())
+                    .put(newChunkKey, new ChunkInfo(resultChunk, currentShard));
+
+                // Add to reverse index
+                shardToChunks.computeIfAbsent(currentShard, k -> ConcurrentHashMap.newKeySet())
+                    .add(newChunkKey);
+
+                addedCount++;
+            }
+
+            if (resultingChunks.size() == 1) {
+                logger.info("Registry: Updated chunk {} -> {} (no split)", oldChunkKey, toShard);
+            } else {
+                logger.info("Registry: Chunk {} was split into {} chunks during migration",
+                    oldChunkKey, resultingChunks.size());
+                for (Megachunk resultChunk : resultingChunks) {
+                    logger.info("  - {} on shard {}", makeChunkKey(namespace, resultChunk), resultChunk.getShard());
+                }
+            }
+
+        } catch (Exception e) {
+            logger.error("Registry: Failed to query resulting chunks, falling back to simple update", e);
+            // Fallback to simple update
+            updateChunkShard(namespace, oldChunkKey, fromShard, toShard);
+        }
+    }
+
+    /**
+     * Query config.chunks for all chunks in a namespace that intersect with the given range.
+     */
+    private List<Megachunk> queryChunksInRange(String namespace, org.bson.BsonDocument minBound, org.bson.BsonDocument maxBound) {
+        List<Megachunk> chunks = new ArrayList<>();
+
+        try {
+            // Build query to find chunks that overlap with [minBound, maxBound)
+            // A chunk overlaps if:
+            // - chunk.min >= minBound AND chunk.min < maxBound  (starts in range)
+            // - OR chunk.max > minBound AND chunk.max <= maxBound  (ends in range)
+            // - OR chunk.min <= minBound AND chunk.max >= maxBound  (contains range)
+            //
+            // Simpler approach: Find all chunks where:
+            // - min >= minBound AND max <= maxBound (fully within)
+            // - OR min == minBound (starts at same place)
+            // - OR max == maxBound (ends at same place)
+            //
+            // Even simpler: Just query by namespace and filter in memory
+            // (MongoDB chunk queries are complex due to BSON comparison)
+
+            org.bson.BsonDocument query = new org.bson.BsonDocument("ns", new org.bson.BsonString(namespace));
+
+            java.util.Map<String, org.bson.RawBsonDocument> allChunks = shardClient.getChunksCache(query);
+
+            logger.debug("Registry: Queried {} chunks for namespace {}", allChunks.size(), namespace);
+
+            Set<String> shardIds = shardClient.getShardsMap().keySet();
+
+            for (org.bson.RawBsonDocument chunkDoc : allChunks.values()) {
+                org.bson.BsonDocument chunkMin = chunkDoc.getDocument("min");
+                org.bson.BsonDocument chunkMax = chunkDoc.getDocument("max");
+
+                // Check if this chunk overlaps with our range
+                // Simple check: if min or max matches our bounds, it's part of the result
+                if (chunkMin.equals(minBound) || chunkMax.equals(maxBound) ||
+                    isWithinRange(chunkMin, chunkMax, minBound, maxBound)) {
+
+                    String shardId = chunkDoc.getString("shard").getValue();
+
+                    // Skip if shard doesn't exist
+                    if (!shardIds.contains(shardId)) {
+                        continue;
+                    }
+
+                    // Skip jumbo chunks
+                    if (com.mongodb.util.ChunkUtils.isChunkJumbo(chunkDoc)) {
+                        continue;
+                    }
+
+                    Megachunk chunk = new Megachunk();
+                    chunk.setNs(namespace);
+                    chunk.setShard(shardId);
+                    chunk.setMin(chunkMin);
+                    chunk.setMax(chunkMax);
+
+                    chunks.add(chunk);
+                }
+            }
+
+        } catch (Exception e) {
+            logger.error("Registry: Error querying chunks in range", e);
+        }
+
+        return chunks;
+    }
+
+    /**
+     * Check if a chunk is within or overlaps the given range.
+     */
+    private boolean isWithinRange(org.bson.BsonDocument chunkMin, org.bson.BsonDocument chunkMax,
+                                  org.bson.BsonDocument rangeMin, org.bson.BsonDocument rangeMax) {
+        // For now, use a simple string comparison as a heuristic
+        // This works for most shard keys but may need refinement for complex keys
+        String chunkMinStr = chunkMin.toString();
+        String chunkMaxStr = chunkMax.toString();
+        String rangeMinStr = rangeMin.toString();
+        String rangeMaxStr = rangeMax.toString();
+
+        // Check if chunk is fully within range
+        return chunkMinStr.compareTo(rangeMinStr) >= 0 && chunkMaxStr.compareTo(rangeMaxStr) <= 0;
+    }
+
+    /**
+     * Simple update of chunk shard assignment (fallback).
+     */
+    private void updateChunkShard(String namespace, String chunkKey, String fromShard, String toShard) {
         Map<String, ChunkInfo> nsChunks = registry.get(namespace);
         if (nsChunks != null) {
             ChunkInfo info = nsChunks.get(chunkKey);
@@ -86,13 +224,29 @@ public class ChunkRegistry {
             }
         }
 
-        // Update reverse index
         Set<String> fromChunks = shardToChunks.get(fromShard);
         if (fromChunks != null) {
             fromChunks.remove(chunkKey);
         }
 
         shardToChunks.computeIfAbsent(toShard, k -> ConcurrentHashMap.newKeySet()).add(chunkKey);
+    }
+
+    /**
+     * Remove a chunk from the registry.
+     */
+    private void removeChunkFromRegistry(String namespace, String chunkKey, String fromShard) {
+        // Remove from namespace map
+        Map<String, ChunkInfo> nsChunks = registry.get(namespace);
+        if (nsChunks != null) {
+            nsChunks.remove(chunkKey);
+        }
+
+        // Remove from reverse index
+        Set<String> fromChunks = shardToChunks.get(fromShard);
+        if (fromChunks != null) {
+            fromChunks.remove(chunkKey);
+        }
     }
 
     /**
