@@ -151,7 +151,8 @@ public class ChunkRegistry {
             }
 
             // Query config.chunks by UUID and boundary matching
-            com.mongodb.client.MongoCollection<org.bson.Document> chunksCollection = shardClient.getChunksCollection();
+            // Use RawBsonDocument collection to avoid Document->BsonDocument conversion issues
+            com.mongodb.client.MongoCollection<org.bson.RawBsonDocument> chunksCollection = shardClient.getChunksCollectionRaw();
 
             // Build query: uuid == collectionUUID AND (min == minBound OR max == maxBound)
             // This finds chunks that share a boundary with the migrated chunk
@@ -167,9 +168,9 @@ public class ChunkRegistry {
 
             // Execute query - should return 1-3 chunks max
             int matchCount = 0;
-            for (org.bson.Document chunkDoc : chunksCollection.find(query)) {
+            for (org.bson.RawBsonDocument chunkDoc : chunksCollection.find(query)) {
                 matchCount++;
-                String shardId = chunkDoc.getString("shard");
+                String shardId = chunkDoc.getString("shard").getValue();
 
                 // Skip if shard doesn't exist
                 if (!shardIds.contains(shardId)) {
@@ -178,13 +179,13 @@ public class ChunkRegistry {
                 }
 
                 // Skip jumbo chunks
-                if (chunkDoc.getBoolean("jumbo", false)) {
+                if (com.mongodb.util.ChunkUtils.isChunkJumbo(chunkDoc)) {
                     logger.debug("Registry: Skipping jumbo chunk");
                     continue;
                 }
 
-                org.bson.BsonDocument chunkMin = (org.bson.BsonDocument) chunkDoc.get("min");
-                org.bson.BsonDocument chunkMax = (org.bson.BsonDocument) chunkDoc.get("max");
+                org.bson.BsonDocument chunkMin = chunkDoc.getDocument("min");
+                org.bson.BsonDocument chunkMax = chunkDoc.getDocument("max");
 
                 Megachunk chunk = new Megachunk();
                 chunk.setNs(namespace);
