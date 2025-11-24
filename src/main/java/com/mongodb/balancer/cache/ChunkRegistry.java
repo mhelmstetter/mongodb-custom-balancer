@@ -136,29 +136,21 @@ public class ChunkRegistry {
         List<Megachunk> chunks = new ArrayList<>();
 
         try {
-            // Build query to find chunks that overlap with [minBound, maxBound)
-            // A chunk overlaps if:
-            // - chunk.min >= minBound AND chunk.min < maxBound  (starts in range)
-            // - OR chunk.max > minBound AND chunk.max <= maxBound  (ends in range)
-            // - OR chunk.min <= minBound AND chunk.max >= maxBound  (contains range)
-            //
-            // Simpler approach: Find all chunks where:
-            // - min >= minBound AND max <= maxBound (fully within)
-            // - OR min == minBound (starts at same place)
-            // - OR max == maxBound (ends at same place)
-            //
-            // Even simpler: Just query by namespace and filter in memory
-            // (MongoDB chunk queries are complex due to BSON comparison)
+            // Query all chunks (getChunksCache doesn't support query filtering)
+            // We'll filter by namespace and range in memory
+            java.util.Map<String, org.bson.RawBsonDocument> allChunks = shardClient.getChunksCache(new org.bson.BsonDocument());
 
-            org.bson.BsonDocument query = new org.bson.BsonDocument("ns", new org.bson.BsonString(namespace));
-
-            java.util.Map<String, org.bson.RawBsonDocument> allChunks = shardClient.getChunksCache(query);
-
-            logger.debug("Registry: Queried {} chunks for namespace {}", allChunks.size(), namespace);
+            logger.debug("Registry: Queried {} total chunks, filtering for namespace {}", allChunks.size(), namespace);
 
             Set<String> shardIds = shardClient.getShardsMap().keySet();
 
             for (org.bson.RawBsonDocument chunkDoc : allChunks.values()) {
+                // Extract and check namespace
+                String chunkNs = com.mongodb.util.ChunkUtils.extractNamespace(chunkDoc, shardClient);
+                if (!namespace.equals(chunkNs)) {
+                    continue;
+                }
+
                 org.bson.BsonDocument chunkMin = chunkDoc.getDocument("min");
                 org.bson.BsonDocument chunkMax = chunkDoc.getDocument("max");
 
@@ -188,6 +180,9 @@ public class ChunkRegistry {
                     chunks.add(chunk);
                 }
             }
+
+            logger.debug("Registry: Found {} chunks for namespace {} overlapping range [{} - {})",
+                chunks.size(), namespace, minBound, maxBound);
 
         } catch (Exception e) {
             logger.error("Registry: Error querying chunks in range", e);
