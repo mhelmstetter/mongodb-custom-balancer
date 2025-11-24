@@ -1318,11 +1318,13 @@ public class StrategyBasedBalancer implements Callable<Integer> {
             logger.info("Average migration duration: {} ms", statistics.getAverageDurationMs());
 
             // Rate limiting
+            String hourLimit = rateLimiter.getMaxChunksPerHour() == 0 ? "unlimited" : String.valueOf(rateLimiter.getMaxChunksPerHour());
+            String dayLimit = rateLimiter.getMaxChunksPerDay() == 0 ? "unlimited" : String.valueOf(rateLimiter.getMaxChunksPerDay());
             logger.info("Rate limits - {}/{} per hour, {}/{} per day",
                        rateLimiter.getChunksMovedThisHour(),
-                       rateLimiter.getMaxChunksPerHour(),
+                       hourLimit,
                        rateLimiter.getChunksMovedToday(),
-                       rateLimiter.getMaxChunksPerDay());
+                       dayLimit);
 
             // Recent failures
             List<com.mongodb.balancer.stats.BalancerStatistics.FailureRecord> recentFailures = statistics.getRecentFailures();
