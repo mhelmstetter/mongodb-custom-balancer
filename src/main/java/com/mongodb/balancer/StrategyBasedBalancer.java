@@ -790,9 +790,20 @@ public class StrategyBasedBalancer implements Callable<Integer> {
                 return null;
             }
 
-            // Select a chunk
+            // Filter out chunks that were already moved in this session
+            List<Megachunk> unmovedChunks = sourceChunks.stream()
+                .filter(chunk -> !chunkMover.wasChunkMoved(chunk))
+                .collect(Collectors.toList());
+
+            if (unmovedChunks.isEmpty()) {
+                logger.debug("Worker {}: All chunks on source shard {} were already moved",
+                           workerId, sourceShard);
+                return null;
+            }
+
+            // Select a chunk from unmoved chunks
             ShardMetrics sourceMetrics = getMetricsForShard(cachedMetrics, sourceShard);
-            Megachunk chunkToMove = chunkSelector.selectChunk(sourceMetrics, sourceChunks);
+            Megachunk chunkToMove = chunkSelector.selectChunk(sourceMetrics, unmovedChunks);
 
             if (chunkToMove == null) {
                 logger.debug("Worker {}: Chunk selector returned null for shard {}", workerId, sourceShard);

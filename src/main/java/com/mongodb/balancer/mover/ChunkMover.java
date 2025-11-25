@@ -180,4 +180,13 @@ public class ChunkMover {
     public Set<String> getMovedChunks() {
         return new HashSet<>(movedChunks);
     }
+
+    /**
+     * Check if a chunk was already moved in this session.
+     * More efficient than getMovedChunks() when only checking individual chunks.
+     */
+    public boolean wasChunkMoved(Megachunk chunk) {
+        String chunkKey = getChunkKey(chunk);
+        return movedChunks.contains(chunkKey);
+    }
 }
