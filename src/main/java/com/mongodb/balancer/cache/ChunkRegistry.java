@@ -105,12 +105,12 @@ public class ChunkRegistry {
             }
 
             if (resultingChunks.size() == 1) {
-                logger.info("Registry: Updated chunk {} -> {} (no split)", oldChunkKey, toShard);
+                logger.debug("Registry: Updated chunk {} -> {} (no split)", oldChunkKey, toShard);
             } else {
                 logger.info("Registry: Chunk {} was split into {} chunks during migration",
                     oldChunkKey, resultingChunks.size());
                 for (Megachunk resultChunk : resultingChunks) {
-                    logger.info("  - {} on shard {}", makeChunkKey(namespace, resultChunk), resultChunk.getShard());
+                    logger.debug("  - {} on shard {}", makeChunkKey(namespace, resultChunk), resultChunk.getShard());
                 }
             }
 
@@ -180,7 +180,7 @@ public class ChunkRegistry {
                 chunks.add(chunk);
             }
 
-            logger.info("Registry: Found {} chunks for namespace {} (uuid={}) matching bounds", matchCount, namespace, uuidObj);
+            logger.debug("Registry: Found {} chunks for namespace {} (uuid={}) matching bounds", matchCount, namespace, uuidObj);
 
         } catch (Exception e) {
             logger.error("Registry: Error querying chunks in range", e);

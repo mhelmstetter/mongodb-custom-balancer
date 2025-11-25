@@ -113,7 +113,7 @@ public class ChunkMover {
             if (result.isSuccess()) {
                 movedChunks.add(chunkKey);
                 chunk.updateLastMovedTime();
-                logger.info("Successfully moved chunk {} from {} to {}",
+                logger.debug("Successfully moved chunk {} from {} to {}",
                           chunkKey, chunk.getShard(), destShard);
             }
 
